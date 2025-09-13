@@ -1,0 +1,55 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--color-dark-bg);
+  overflow: hidden;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.game-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.game-section:hover {
+  box-shadow: 0 0 30px rgba(52, 178, 152, 0.2);
+}
+
+.divider {
+  width: 2px;
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--color-accent-green) 30%,
+    var(--color-accent-blue) 50%,
+    var(--color-accent-purple) 70%,
+    transparent 100%
+  );
+  margin: 2rem 0;
+  box-shadow: 0 0 20px rgba(52, 178, 152, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+.chat-section {
+  flex: 0 0 400px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.chat-section:hover {
+  box-shadow: 0 0 30px rgba(0, 153, 255, 0.2);
+}
