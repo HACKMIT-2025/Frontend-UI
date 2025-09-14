@@ -148,7 +148,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const successMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `✅ **${type} URL已复制到剪贴板！**\n\n现在你可以将链接分享给朋友，让他们也来玩你的自制Mario关卡！`,
+        content: `✅ **${type} URL copied to clipboard!**\n\nYou can now share the link with your friends to let them play your custom Mario level!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, successMessage])
@@ -156,7 +156,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `❌ **复制失败**\n\n请手动复制以下链接：\n\`\`\`\n${text}\n\`\`\``,
+        content: `❌ **Copy failed**\n\nPlease manually copy the following link:\n\`\`\`\n${text}\n\`\`\``,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
@@ -194,14 +194,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${result.game_url}) - 完整游戏版本\n• [📱 Embed Version](${result.embed_url}) - 嵌入版本\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${result.game_url}) - Full game version\n• [📱 Embed Version](${result.embed_url}) - Embeddable version\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
 
       // Automatically copy the game URL and show share options
       setTimeout(() => {
-        copyToClipboard(result.game_url, '游戏分享')
+        copyToClipboard(result.game_url, 'Game Share')
       }, 1000)
 
       // Add follow-up message with copy buttons
@@ -209,7 +209,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const shareMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: `🔗 **分享你的关卡！**\n\n游戏链接已自动复制到剪贴板，你可以：\n• 直接粘贴分享给朋友\n• 发布到社交媒体\n• 保存到收藏夹\n\n点击下面的按钮可以重新复制链接：\n\n**🎮 [点击复制游戏链接](${result.game_url})**\n**📱 [点击复制嵌入链接](${result.embed_url})**`,
+          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the buttons below to copy the links again:\n\n**🎮 [Click to copy game link](${result.game_url})**\n**📱 [Click to copy embed link](${result.embed_url})**`,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, shareMessage])
