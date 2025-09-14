@@ -6,11 +6,14 @@ export class Enemy extends Entity {
   private speed: number = 2
   private animationFrame = 0
   private animationTimer = 0
+  public customSize?: number
 
-  constructor(x: number, y: number, type: string) {
-    const size = type === 'bowser' ? 64 : 32
-    super(x, y, size, size, 'enemy')
+  constructor(x: number, y: number, type: string, size?: number) {
+    // Use custom size if provided, otherwise use type-based defaults
+    let entitySize = size || (type === 'bowser' ? 64 : type === 'spike' ? 32 : 32)
+    super(x, y, entitySize, entitySize, 'enemy')
     this.enemyType = type
+    this.customSize = size
     this.setPhysics({ solid: true, gravity: true, mass: 1 })
 
     // Set speed based on enemy type
@@ -27,6 +30,10 @@ export class Enemy extends Entity {
         break
       case 'bowser':
         this.speed = 0.5
+        break
+      case 'spike':
+        this.speed = 0
+        this.setPhysics({ solid: true, gravity: false, mass: 0 })
         break
     }
   }
@@ -87,6 +94,37 @@ export class Enemy extends Entity {
         for (let i = 0; i < 4; i++) {
           ctx.fillRect(this.position.x + i * 16, this.position.y - 8, 8, 8)
         }
+        break
+
+      case 'spike':
+        // Draw triangular metallic gray spike that kills on contact
+        ctx.fillStyle = '#696969' // Dark gray metallic color
+        ctx.strokeStyle = '#404040' // Darker outline
+        ctx.lineWidth = 2
+
+        // Calculate spike triangle points
+        const centerX = this.position.x + this.width / 2
+        const baseY = this.position.y + this.height
+        const tipY = this.position.y
+        const leftX = this.position.x
+        const rightX = this.position.x + this.width
+
+        ctx.beginPath()
+        ctx.moveTo(centerX, tipY)    // Top point
+        ctx.lineTo(leftX, baseY)     // Bottom left
+        ctx.lineTo(rightX, baseY)    // Bottom right
+        ctx.closePath()
+        ctx.fill()
+        ctx.stroke()
+
+        // Add metallic shine effect
+        ctx.fillStyle = 'rgba(192, 192, 192, 0.7)' // Light gray shine
+        ctx.beginPath()
+        ctx.moveTo(centerX, tipY)
+        ctx.lineTo(leftX + this.width * 0.3, baseY)
+        ctx.lineTo(centerX - this.width * 0.1, baseY)
+        ctx.closePath()
+        ctx.fill()
         break
 
       default:

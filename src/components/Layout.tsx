@@ -38,7 +38,8 @@ const Layout: React.FC = () => {
       <div className="game-section">
         <GamePanel
           ref={gamePanelRef}
-          embedUrl={currentLevelData?.jsonUrl || currentLevelData?.embedUrl || undefined}
+          jsonUrl={currentLevelData?.jsonUrl}
+          embedUrl={currentLevelData?.embedUrl}
           onLevelLoaded={handleLevelLoaded}
         />
       </div>

@@ -8,12 +8,17 @@ import { Player } from './entities/Player'
 import { Platform } from './level/Platform'
 import { Entity } from './entities/Entity'
 import { SpriteLoader } from './sprites/SpriteLoader'
+import { audioManager } from './audio/AudioManager'
 
 export interface GameConfig {
   width?: number
   height?: number
   gravity?: number
   fps?: number
+  goal_x?: number
+  goal_y?: number
+  start_x?: number
+  start_y?: number
 }
 
 export class GameEngine {
@@ -62,6 +67,8 @@ export class GameEngine {
 
     this.fps = config.fps || 60
     this.frameInterval = 1000 / this.fps
+
+    // Goal and start positions removed as they're not used
 
     // Setup default demo level
     this.setupDemoLevel()
@@ -120,6 +127,7 @@ export class GameEngine {
   }
 
   public async initialize() {
+    // Initialize sprites
     if (!this.spritesInitialized) {
       console.log('Loading sprites...')
       try {
@@ -130,6 +138,15 @@ export class GameEngine {
         console.warn('Failed to load sprites, falling back to basic rendering:', error)
         this.spritesInitialized = false
       }
+    }
+
+    // Initialize audio system
+    try {
+      console.log('Initializing audio system...')
+      await audioManager.initialize()
+      console.log('Audio system initialized!')
+    } catch (error) {
+      console.warn('Failed to initialize audio system:', error)
     }
   }
 
@@ -493,5 +510,14 @@ export class GameEngine {
   }
   public getEntities(): Entity[] {
     return this.entityManager.getEntities()
+  }
+
+  // Audio system access
+  public getAudioManager() {
+    return audioManager
+  }
+
+  public setLevelData(_levelData: any) {
+    // Level data handling removed as it's not used
   }
 }

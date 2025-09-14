@@ -1,153 +1,60 @@
-import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react'
-import GameCanvas, { type GameCanvasRef } from './GameCanvas'
+import { useEffect, useState, useImperativeHandle, forwardRef } from 'react'
 import './GamePanel.css'
 
 interface GamePanelProps {
   embedUrl?: string;
+  jsonUrl?: string;
   onLevelLoaded?: () => void;
 }
 
 interface GamePanelRef {
-  loadNewLevel: (embedUrl: string) => void;
+  loadNewLevel: (jsonUrl: string) => void;
 }
 
-interface GameState {
-  score: number
-  lives: number
-  coins: number
-  status: 'loading' | 'ready' | 'playing' | 'paused' | 'game-over' | 'victory'
-}
 
-const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ embedUrl, onLevelLoaded }, ref) => {
-  const gameCanvasRef = useRef<GameCanvasRef>(null)
-  const [gameState, setGameState] = useState<GameState>({
-    score: 0,
-    lives: 3,
-    coins: 0,
-    status: 'ready'
-  })
-  const [currentLevelInfo, setCurrentLevelInfo] = useState<{ id?: string, source: string } | null>(null)
+const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ jsonUrl, onLevelLoaded }, ref) => {
   const [error, setError] = useState<string | null>(null)
+  const [iframeUrl, setIframeUrl] = useState<string>('')
 
-  // Handle loading new level when embedUrl changes
+  // Build iframe URL for cloud gaming engine
   useEffect(() => {
-    if (embedUrl && gameCanvasRef.current) {
-      console.log('🎮 Loading game with embed URL:', embedUrl)
+    const baseUrl = 'https://frontend-mario.vercel.app/embed'
 
-      // Check if it's a JSON URL or contains level data
-      if (embedUrl.includes('.json') || embedUrl.includes('/api/levels/')) {
-        // Direct JSON URL
-        loadLevelFromUrl(embedUrl)
-      } else if (embedUrl.includes('data_url=')) {
-        // Extract JSON URL from embed URL
-        const urlParams = new URLSearchParams(embedUrl.split('?')[1])
-        const dataUrl = urlParams.get('data_url')
-        if (dataUrl) {
-          loadLevelFromUrl(dataUrl)
-        } else {
-          setError('Invalid embed URL: no data_url parameter found')
-        }
-      } else {
-        // Try to parse as level ID
-        const levelId = extractLevelId(embedUrl)
-        if (levelId) {
-          loadLevelFromId(levelId)
-        } else {
-          setError('Unable to parse level information from embed URL')
-        }
-      }
-    }
-  }, [embedUrl])
-
-  // Extract level ID from various URL formats
-  const extractLevelId = (url: string): string | null => {
-    // Try different patterns
-    const patterns = [
-      /\/embed\/([^\/\?]+)/,  // /embed/levelId
-      /\/play\/([^\/\?]+)/,   // /play/levelId
-      /\/levels\/([^\/\?]+)/, // /levels/levelId
-      /[?&]id=([^&]+)/,       // ?id=levelId or &id=levelId
-      /[?&]level=([^&]+)/     // ?level=levelId or &level=levelId
-    ]
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) return match[1]
-    }
-
-    return null
-  }
-
-  // Load level from JSON URL
-  const loadLevelFromUrl = async (jsonUrl: string) => {
-    try {
+    if (jsonUrl) {
+      // When JSON URL is provided, use embed mode with JSON parameter
+      const url = `${baseUrl}?json=${encodeURIComponent(jsonUrl)}`
+      setIframeUrl(url)
       setError(null)
-      await gameCanvasRef.current?.loadLevel({ jsonUrl })
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load level from URL'
-      setError(errorMessage)
-      console.error('Failed to load level from URL:', error)
+      onLevelLoaded?.()
+      console.log('🎮 Loading game with JSON URL:', jsonUrl)
+      console.log('🔗 Embed URL:', url)
+    } else {
+      // Default URL without specific map
+      setIframeUrl(baseUrl)
+      console.log('🎮 Loading default game')
     }
-  }
+  }, [jsonUrl, onLevelLoaded])
 
-  // Load level from level ID
-  const loadLevelFromId = async (levelId: string) => {
-    try {
-      setError(null)
-      await gameCanvasRef.current?.loadLevel({ levelId })
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load level by ID'
-      setError(errorMessage)
-      console.error('Failed to load level by ID:', error)
+  // Initialize with default URL on component mount
+  useEffect(() => {
+    if (!jsonUrl && !iframeUrl) {
+      const baseUrl = 'https://frontend-mario.vercel.app/embed'
+      setIframeUrl(baseUrl)
+      console.log('🎮 Initialized with default game')
     }
-  }
+  }, [])
 
-  // Handle game state changes from GameCanvas
-  const handleGameStateChange = (newState: GameState) => {
-    setGameState(newState)
-  }
 
-  // Handle level loaded from GameCanvas
-  const handleLevelLoaded = (levelInfo: { id?: string, source: string }) => {
-    setCurrentLevelInfo(levelInfo)
-    setError(null)
-    onLevelLoaded?.()
-    console.log('🎮 Level loaded:', levelInfo)
-  }
 
-  // Handle errors from GameCanvas
-  const handleError = (errorMessage: string) => {
-    setError(errorMessage)
-  }
-
-  // Game control handlers
-  const handlePause = () => {
-    gameCanvasRef.current?.pauseGame()
-  }
-
-  const handleResume = () => {
-    gameCanvasRef.current?.resumeGame()
-  }
-
-  const handleRestart = () => {
-    gameCanvasRef.current?.resetGame()
-    setError(null)
-  }
 
   // Function to load new level (exposed via ref)
-  const loadNewLevel = async (embedUrl: string) => {
-    console.log('🔄 Loading new level:', embedUrl)
-
-    if (embedUrl.includes('.json') || embedUrl.includes('/api/levels/')) {
-      await loadLevelFromUrl(embedUrl)
-    } else {
-      const levelId = extractLevelId(embedUrl)
-      if (levelId) {
-        await loadLevelFromId(levelId)
-      } else {
-        setError('Unable to parse level information from URL')
-      }
-    }
+  const loadNewLevel = (newJsonUrl: string) => {
+    console.log('🔄 Loading new level with JSON:', newJsonUrl)
+    const baseUrl = 'https://frontend-mario.vercel.app/embed'
+    const url = `${baseUrl}?json=${encodeURIComponent(newJsonUrl)}`
+    setIframeUrl(url)
+    setError(null)
+    onLevelLoaded?.()
   }
 
   // Expose the loadNewLevel function via ref
@@ -155,57 +62,9 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ embedUrl, onLevelL
     loadNewLevel
   }), [])
 
-  // Format game status for display
-  const formatStatus = (status: GameState['status']): string => {
-    switch (status) {
-      case 'loading': return 'Loading...'
-      case 'ready': return 'Ready'
-      case 'playing': return 'Playing'
-      case 'paused': return 'Paused'
-      case 'game-over': return 'Game Over'
-      case 'victory': return 'Victory!'
-      default: return 'Ready'
-    }
-  }
 
   return (
     <div className="game-panel">
-      <div className="game-header">
-        <div className="game-title">
-          <h2>🎮 Mario Game Engine</h2>
-          <span className={`game-status ${gameState.status}`}>
-            {formatStatus(gameState.status)}
-          </span>
-        </div>
-        <div className="game-info">
-          <span className="game-score">Score: {gameState.score.toLocaleString()}</span>
-          <span className="game-lives">Lives: {gameState.lives}</span>
-          <span className="game-coins">Coins: {gameState.coins}</span>
-        </div>
-        <div className="game-controls">
-          <button className="control-btn" onClick={handleRestart}>
-            <span>🔄</span>
-            Restart
-          </button>
-          <button
-            className="control-btn"
-            onClick={handlePause}
-            disabled={gameState.status !== 'playing'}
-          >
-            <span>⏸️</span>
-            Pause
-          </button>
-          <button
-            className="control-btn"
-            onClick={handleResume}
-            disabled={gameState.status !== 'paused'}
-          >
-            <span>▶️</span>
-            Resume
-          </button>
-        </div>
-      </div>
-
       {/* Error display */}
       {error && (
         <div className="game-error">
@@ -214,22 +73,36 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ embedUrl, onLevelL
         </div>
       )}
 
-      {/* Level info display */}
-      {currentLevelInfo && (
-        <div className="level-info">
-          <span>🗺️ Level: {currentLevelInfo.id || 'Unknown'} ({currentLevelInfo.source})</span>
-        </div>
-      )}
-
       <div className="game-content">
-        <GameCanvas
-          ref={gameCanvasRef}
-          onGameStateChange={handleGameStateChange}
-          onLevelLoaded={handleLevelLoaded}
-          onError={handleError}
-          width={1024}
-          height={576}
-        />
+        {iframeUrl && (
+          <iframe
+            src={iframeUrl}
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              background: '#000'
+            }}
+            title="Mario Game"
+            allow="gamepad"
+          />
+        )}
+        {!iframeUrl && (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              background: '#000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontSize: '18px'
+            }}
+          >
+            Loading game...
+          </div>
+        )}
       </div>
     </div>
   )

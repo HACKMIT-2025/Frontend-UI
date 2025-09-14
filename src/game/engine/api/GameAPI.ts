@@ -8,7 +8,7 @@ import { LevelBuilder } from '../LevelBuilder'
  */
 export class GameAPI {
   private engine: GameEngine
-  private builder: LevelBuilder
+  public builder: LevelBuilder
   private canvas: HTMLCanvasElement
 
   constructor(canvas: HTMLCanvasElement | string, config?: GameConfig) {
@@ -73,6 +73,19 @@ export class GameAPI {
   }
 
   /**
+   * Add a spike hazard to the level (triangular metallic gray spike that kills player on contact)
+   * @param x - X coordinate
+   * @param y - Y coordinate
+   * @param size - Size factor (default 32, scales the spike)
+   */
+  addSpike(x: number, y: number, size = 32): this {
+    // Add as enemy type 'spike' with custom size
+    this.builder.addEnemy(x, y, 'spike', size)
+    this.log(`Spike added at (${x}, ${y}) size: ${size}x${size}`)
+    return this
+  }
+
+  /**
    * Add a coin to the level
    */
   addCoin(x: number, y: number): this {
@@ -96,6 +109,15 @@ export class GameAPI {
   setPlayerStart(x: number, y: number): this {
     this.builder.setPlayerStart(x, y)
     this.log(`Player start position set to (${x}, ${y})`)
+    return this
+  }
+
+  /**
+   * Add a goal star at the specified coordinates (victory condition)
+   */
+  addGoal(x: number, y: number): this {
+    this.builder.addGoal(x, y)
+    this.log(`Goal added at (${x}, ${y})`)
     return this
   }
 
@@ -271,6 +293,99 @@ export class GameAPI {
     this.log('Game reset')
     return this
   }
+
+  // ==================== AUDIO CONTROL ====================
+
+  /**
+   * Play a sound effect
+   */
+  playSound(soundName: string, options?: { volume?: number; playbackRate?: number }): this {
+    const audioManager = this.engine.getAudioManager()
+    audioManager.playSound(soundName, options)
+    this.log(`Sound played: ${soundName}`)
+    return this
+  }
+
+  /**
+   * Play background music
+   */
+  async playMusic(trackName: string, trackSrc: string): Promise<this> {
+    const audioManager = this.engine.getAudioManager()
+    await audioManager.playMusic({ name: trackName, src: trackSrc })
+    this.log(`Music started: ${trackName}`)
+    return this
+  }
+
+  /**
+   * Stop background music
+   */
+  async stopMusic(): Promise<this> {
+    const audioManager = this.engine.getAudioManager()
+    await audioManager.stopMusic()
+    this.log('Music stopped')
+    return this
+  }
+
+  /**
+   * Set master volume
+   */
+  setVolume(volume: number): this {
+    const audioManager = this.engine.getAudioManager()
+    audioManager.updateSettings({ masterVolume: Math.max(0, Math.min(1, volume)) })
+    this.log(`Volume set to: ${volume}`)
+    return this
+  }
+
+  /**
+   * Set sound effects volume
+   */
+  setSfxVolume(volume: number): this {
+    const audioManager = this.engine.getAudioManager()
+    audioManager.updateSettings({ sfxVolume: Math.max(0, Math.min(1, volume)) })
+    this.log(`SFX volume set to: ${volume}`)
+    return this
+  }
+
+  /**
+   * Set music volume
+   */
+  setMusicVolume(volume: number): this {
+    const audioManager = this.engine.getAudioManager()
+    audioManager.updateSettings({ musicVolume: Math.max(0, Math.min(1, volume)) })
+    this.log(`Music volume set to: ${volume}`)
+    return this
+  }
+
+  /**
+   * Mute/unmute all audio
+   */
+  setMuted(muted: boolean): this {
+    const audioManager = this.engine.getAudioManager()
+    audioManager.updateSettings({ muted })
+    this.log(`Audio muted: ${muted}`)
+    return this
+  }
+
+  /**
+   * Get audio settings
+   */
+  getAudioSettings() {
+    return this.engine.getAudioManager().getSettings()
+  }
+
+  // ==================== QUICK SOUND METHODS ====================
+
+  /**
+   * Quick methods for common game sounds
+   */
+  soundJump(): this { return this.playSound('jump') }
+  soundCoin(): this { return this.playSound('coin') }
+  soundPowerUp(): this { return this.playSound('powerup') }
+  soundEnemyDefeat(): this { return this.playSound('enemy_stomp') }
+  soundBlockBreak(): this { return this.playSound('block_break') }
+  soundDeath(): this { return this.playSound('death') }
+  soundLevelComplete(): this { return this.playSound('level_complete') }
+  soundGameOver(): this { return this.playSound('game_over') }
 
   // ==================== GETTERS ====================
 

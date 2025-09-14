@@ -35,6 +35,12 @@ export { Camera } from './render/Camera'
 // Input
 export { InputManager } from './input/InputManager'
 
+// Audio System
+export { AudioManager, audioManager } from './audio/AudioManager'
+export { SoundEffect } from './audio/SoundEffect'
+export { MusicPlayer } from './audio/MusicPlayer'
+export { AudioGenerator } from './audio/AudioGenerator'
+
 // Type exports
 export type { GameConfig } from './GameEngine'
 export type { LevelData } from './LevelBuilder'
@@ -43,3 +49,6 @@ export type { Vector2D, AABB } from './physics/PhysicsEngine'
 export type { EntityPhysics } from './entities/Entity'
 export type { PlayerSize, PlayerState } from './entities/Player'
 export type { UIData } from './render/Renderer'
+export type { AudioSettings, SoundDefinition } from './audio/AudioManager'
+export type { SoundOptions } from './audio/SoundEffect'
+export type { MusicOptions, MusicTrack } from './audio/MusicPlayer'

@@ -18,6 +18,7 @@ export interface LevelData {
     x: number
     y: number
     type: string
+    size?: number
   }>
   coins: Array<{
     x: number
@@ -29,6 +30,10 @@ export interface LevelData {
     type: string
   }>
   playerStart: {
+    x: number
+    y: number
+  }
+  goal?: {
     x: number
     y: number
   }
@@ -72,8 +77,8 @@ export class LevelBuilder {
     return this
   }
 
-  public addEnemy(x: number, y: number, type: string): this {
-    this.levelData.enemies.push({ x, y, type })
+  public addEnemy(x: number, y: number, type: string, size?: number): this {
+    this.levelData.enemies.push({ x, y, type, size })
     return this
   }
 
@@ -89,6 +94,11 @@ export class LevelBuilder {
 
   public setPlayerStart(x: number, y: number): this {
     this.levelData.playerStart = { x, y }
+    return this
+  }
+
+  public addGoal(x: number, y: number): this {
+    this.levelData.goal = { x, y }
     return this
   }
 
@@ -147,7 +157,7 @@ export class LevelBuilder {
 
     // Add enemies
     this.levelData.enemies.forEach(e => {
-      level.addEnemy(e.x, e.y, e.type)
+      level.addEnemy(e.x, e.y, e.type, e.size)
     })
 
     // Add power-ups

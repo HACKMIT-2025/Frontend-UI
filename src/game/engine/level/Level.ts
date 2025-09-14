@@ -25,8 +25,8 @@ export class Level {
     return polygon
   }
 
-  public addEnemy(x: number, y: number, type: string): Enemy {
-    const enemy = new Enemy(x, y, type)
+  public addEnemy(x: number, y: number, type: string, size?: number): Enemy {
+    const enemy = new Enemy(x, y, type, size)
     this.entities.push(enemy)
     return enemy
   }
