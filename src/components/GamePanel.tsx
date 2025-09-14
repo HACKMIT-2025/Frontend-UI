@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react'
+import GameCanvas, { type GameCanvasRef } from './GameCanvas'
 import './GamePanel.css'
 
 interface GamePanelProps {
@@ -10,147 +11,224 @@ interface GamePanelRef {
   loadNewLevel: (embedUrl: string) => void;
 }
 
+interface GameState {
+  score: number
+  lives: number
+  coins: number
+  status: 'loading' | 'ready' | 'playing' | 'paused' | 'game-over' | 'victory'
+}
+
 const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ embedUrl, onLevelLoaded }, ref) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const [gameScore, setGameScore] = useState(0)
-  const [gameStatus, setGameStatus] = useState('Ready')
-  const [, setCurrentLevelUrl] = useState<string | null>(null)
+  const gameCanvasRef = useRef<GameCanvasRef>(null)
+  const [gameState, setGameState] = useState<GameState>({
+    score: 0,
+    lives: 3,
+    coins: 0,
+    status: 'ready'
+  })
+  const [currentLevelInfo, setCurrentLevelInfo] = useState<{ id?: string, source: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
+  // Handle loading new level when embedUrl changes
   useEffect(() => {
-    // Set the iframe source to the embedded Mario game
-    let gameUrl = 'https://frontend-mario.vercel.app/embed'
-
-    if (embedUrl) {
-      // Use the complete embed URL from API response
-      gameUrl = embedUrl
-      setCurrentLevelUrl(embedUrl)
+    if (embedUrl && gameCanvasRef.current) {
       console.log('🎮 Loading game with embed URL:', embedUrl)
-      setGameStatus('Loading New Map...')
-    } else {
-      console.log('🎮 Loading default game (no custom map)')
-      setGameStatus('Ready')
-    }
 
-    if (iframeRef.current) {
-      console.log('🔄 Setting iframe src to:', gameUrl)
-      iframeRef.current.src = gameUrl
+      // Check if it's a JSON URL or contains level data
+      if (embedUrl.includes('.json') || embedUrl.includes('/api/levels/')) {
+        // Direct JSON URL
+        loadLevelFromUrl(embedUrl)
+      } else if (embedUrl.includes('data_url=')) {
+        // Extract JSON URL from embed URL
+        const urlParams = new URLSearchParams(embedUrl.split('?')[1])
+        const dataUrl = urlParams.get('data_url')
+        if (dataUrl) {
+          loadLevelFromUrl(dataUrl)
+        } else {
+          setError('Invalid embed URL: no data_url parameter found')
+        }
+      } else {
+        // Try to parse as level ID
+        const levelId = extractLevelId(embedUrl)
+        if (levelId) {
+          loadLevelFromId(levelId)
+        } else {
+          setError('Unable to parse level information from embed URL')
+        }
+      }
     }
   }, [embedUrl])
 
-  useEffect(() => {
-    // Listen for PostMessage events from the embedded game
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://frontend-mario.vercel.app') {
-        return // Only accept messages from the Mario game origin
-      }
+  // Extract level ID from various URL formats
+  const extractLevelId = (url: string): string | null => {
+    // Try different patterns
+    const patterns = [
+      /\/embed\/([^\/\?]+)/,  // /embed/levelId
+      /\/play\/([^\/\?]+)/,   // /play/levelId
+      /\/levels\/([^\/\?]+)/, // /levels/levelId
+      /[?&]id=([^&]+)/,       // ?id=levelId or &id=levelId
+      /[?&]level=([^&]+)/     // ?level=levelId or &level=levelId
+    ]
 
-      const { type, data } = event.data
-
-      switch (type) {
-        case 'SCORE_UPDATE':
-          setGameScore(data.score)
-          break
-        case 'GAME_START':
-          setGameStatus('Playing')
-          break
-        case 'GAME_OVER':
-          setGameStatus('Game Over')
-          break
-        case 'GAME_WIN':
-          setGameStatus('Victory!')
-          break
-        case 'GAME_PAUSE':
-          setGameStatus('Paused')
-          break
-        case 'GAME_RESUME':
-          setGameStatus('Playing')
-          break
-        case 'LEVEL_LOADED':
-          setGameStatus('Level Loaded')
-          if (onLevelLoaded) onLevelLoaded()
-          break
-        default:
-          console.log('Unknown message from game:', event.data)
-      }
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
     }
 
-    window.addEventListener('message', handleMessage)
+    return null
+  }
 
-    return () => {
-      window.removeEventListener('message', handleMessage)
-    }
-  }, [onLevelLoaded])
-
-  // Function to send messages to the embedded game
-  const sendGameMessage = (type: string, data?: any) => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage({ type, ...data }, 'https://frontend-mario.vercel.app')
+  // Load level from JSON URL
+  const loadLevelFromUrl = async (jsonUrl: string) => {
+    try {
+      setError(null)
+      await gameCanvasRef.current?.loadLevel({ jsonUrl })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load level from URL'
+      setError(errorMessage)
+      console.error('Failed to load level from URL:', error)
     }
   }
 
+  // Load level from level ID
+  const loadLevelFromId = async (levelId: string) => {
+    try {
+      setError(null)
+      await gameCanvasRef.current?.loadLevel({ levelId })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load level by ID'
+      setError(errorMessage)
+      console.error('Failed to load level by ID:', error)
+    }
+  }
+
+  // Handle game state changes from GameCanvas
+  const handleGameStateChange = (newState: GameState) => {
+    setGameState(newState)
+  }
+
+  // Handle level loaded from GameCanvas
+  const handleLevelLoaded = (levelInfo: { id?: string, source: string }) => {
+    setCurrentLevelInfo(levelInfo)
+    setError(null)
+    onLevelLoaded?.()
+    console.log('🎮 Level loaded:', levelInfo)
+  }
+
+  // Handle errors from GameCanvas
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage)
+  }
+
+  // Game control handlers
   const handlePause = () => {
-    sendGameMessage('PAUSE_GAME')
+    gameCanvasRef.current?.pauseGame()
   }
 
   const handleResume = () => {
-    sendGameMessage('RESUME_GAME')
+    gameCanvasRef.current?.resumeGame()
   }
 
   const handleRestart = () => {
-    sendGameMessage('RESET_GAME')
-    setGameScore(0)
-    setGameStatus('Ready')
+    gameCanvasRef.current?.resetGame()
+    setError(null)
   }
 
-  const loadNewLevel = (embedUrl: string) => {
-    // Update the iframe src with the new embed URL directly
-    if (iframeRef.current) {
-      iframeRef.current.src = embedUrl
-      setCurrentLevelUrl(embedUrl)
-      setGameStatus('Loading Level...')
+  // Function to load new level (exposed via ref)
+  const loadNewLevel = async (embedUrl: string) => {
+    console.log('🔄 Loading new level:', embedUrl)
+
+    if (embedUrl.includes('.json') || embedUrl.includes('/api/levels/')) {
+      await loadLevelFromUrl(embedUrl)
+    } else {
+      const levelId = extractLevelId(embedUrl)
+      if (levelId) {
+        await loadLevelFromId(levelId)
+      } else {
+        setError('Unable to parse level information from URL')
+      }
     }
   }
 
   // Expose the loadNewLevel function via ref
   useImperativeHandle(ref, () => ({
     loadNewLevel
-  }))
+  }), [])
+
+  // Format game status for display
+  const formatStatus = (status: GameState['status']): string => {
+    switch (status) {
+      case 'loading': return 'Loading...'
+      case 'ready': return 'Ready'
+      case 'playing': return 'Playing'
+      case 'paused': return 'Paused'
+      case 'game-over': return 'Game Over'
+      case 'victory': return 'Victory!'
+      default: return 'Ready'
+    }
+  }
 
   return (
     <div className="game-panel">
       <div className="game-header">
         <div className="game-title">
           <h2>🎮 Mario Game Engine</h2>
-          <span className={`game-status ${gameStatus.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}>
-            {gameStatus}
+          <span className={`game-status ${gameState.status}`}>
+            {formatStatus(gameState.status)}
           </span>
         </div>
         <div className="game-info">
-          <span className="game-score">Score: {gameScore.toLocaleString()}</span>
+          <span className="game-score">Score: {gameState.score.toLocaleString()}</span>
+          <span className="game-lives">Lives: {gameState.lives}</span>
+          <span className="game-coins">Coins: {gameState.coins}</span>
         </div>
         <div className="game-controls">
           <button className="control-btn" onClick={handleRestart}>
             <span>🔄</span>
             Restart
           </button>
-          <button className="control-btn" onClick={handlePause}>
+          <button
+            className="control-btn"
+            onClick={handlePause}
+            disabled={gameState.status !== 'playing'}
+          >
             <span>⏸️</span>
             Pause
           </button>
-          <button className="control-btn" onClick={handleResume}>
+          <button
+            className="control-btn"
+            onClick={handleResume}
+            disabled={gameState.status !== 'paused'}
+          >
             <span>▶️</span>
             Resume
           </button>
         </div>
       </div>
+
+      {/* Error display */}
+      {error && (
+        <div className="game-error">
+          <span>❌ {error}</span>
+          <button onClick={() => setError(null)} className="error-close">×</button>
+        </div>
+      )}
+
+      {/* Level info display */}
+      {currentLevelInfo && (
+        <div className="level-info">
+          <span>🗺️ Level: {currentLevelInfo.id || 'Unknown'} ({currentLevelInfo.source})</span>
+        </div>
+      )}
+
       <div className="game-content">
-        <iframe
-          ref={iframeRef}
-          title="Mario Game"
-          className="game-iframe"
-          frameBorder="0"
-          allowFullScreen
-          allow="gamepad; autoplay"
+        <GameCanvas
+          ref={gameCanvasRef}
+          onGameStateChange={handleGameStateChange}
+          onLevelLoaded={handleLevelLoaded}
+          onError={handleError}
+          width={1024}
+          height={576}
         />
       </div>
     </div>

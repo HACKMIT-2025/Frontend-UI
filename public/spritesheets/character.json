@@ -1,0 +1,63 @@
+{
+  "texture": "character.png",
+  "size": {
+    "width": 1024,
+    "height": 768
+  },
+  "sprites": {
+    "player_down": {
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 256
+    },
+    "player_jump": {
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 256
+    },
+    "player_left": {
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 256
+    },
+    "player_right": {
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 256
+    },
+    "player_run_left_01": {
+      "x": 0,
+      "y": 256,
+      "width": 256,
+      "height": 256
+    },
+    "player_run_left_02": {
+      "x": 256,
+      "y": 256,
+      "width": 256,
+      "height": 256
+    },
+    "player_run_right_01": {
+      "x": 512,
+      "y": 256,
+      "width": 256,
+      "height": 256
+    },
+    "player_run_right_02": {
+      "x": 768,
+      "y": 256,
+      "width": 256,
+      "height": 256
+    },
+    "player_up": {
+      "x": 0,
+      "y": 512,
+      "width": 256,
+      "height": 256
+    }
+  }
+}

@@ -4,14 +4,28 @@ import ChatPanel from './ChatPanel'
 import './Layout.css'
 
 const Layout: React.FC = () => {
-  const [currentEmbedUrl, setCurrentEmbedUrl] = useState<string | null>(null)
+  const [currentLevelData, setCurrentLevelData] = useState<{
+    jsonUrl?: string,
+    embedUrl?: string,
+    levelId?: string
+  } | null>(null)
   const gamePanelRef = useRef<any>(null)
 
-  const handleLevelGenerated = (embedUrl: string) => {
-    setCurrentEmbedUrl(embedUrl)
-    // If the game panel has a method to load new levels, call it
+  const handleLevelGenerated = (levelData: {
+    jsonUrl?: string,
+    embedUrl?: string,
+    levelId?: string
+  }) => {
+    setCurrentLevelData(levelData)
+    console.log('🔄 Level data received in Layout:', levelData)
+
+    // Load level using JSON URL (preferred) or fallback to embed URL
     if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
-      gamePanelRef.current.loadNewLevel(embedUrl)
+      // Pass the JSON URL directly for native game loading
+      const urlToLoad = levelData.jsonUrl || levelData.embedUrl
+      if (urlToLoad) {
+        gamePanelRef.current.loadNewLevel(urlToLoad)
+      }
     }
   }
 
@@ -24,7 +38,7 @@ const Layout: React.FC = () => {
       <div className="game-section">
         <GamePanel
           ref={gamePanelRef}
-          embedUrl={currentEmbedUrl || undefined}
+          embedUrl={currentLevelData?.jsonUrl || currentLevelData?.embedUrl || undefined}
           onLevelLoaded={handleLevelLoaded}
         />
       </div>

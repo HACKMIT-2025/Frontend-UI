@@ -15,7 +15,7 @@ export interface Message {
 }
 
 interface ChatPanelProps {
-  onLevelGenerated?: (dataUrl: string) => void;
+  onLevelGenerated?: (levelData: { jsonUrl?: string, embedUrl?: string, levelId?: string }) => void;
 }
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
@@ -133,12 +133,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
-      // Call the callback to load the level in the game panel using embed_url
-      if (result.embed_url && onLevelGenerated) {
+      // Call the callback to load the level in the game panel using JSON data URL
+      if (result.data_url && onLevelGenerated) {
         console.log('📤 API returned embed_url:', result.embed_url)
         console.log('📄 API returned data_url:', result.data_url)
         console.log('🆔 API returned level_id:', result.level_id)
-        onLevelGenerated(result.embed_url)
+        // Pass the JSON URL for native game loading
+        onLevelGenerated({
+          jsonUrl: result.data_url,
+          embedUrl: result.embed_url,
+          levelId: result.level_id
+        })
       }
 
       // Add success message with shape detection details and JSON URL
@@ -151,7 +156,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **新地图创建成功！** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **你的手绘地图已加载到左侧游戏中！**\n\n📄 **JSON Data URL:**\n\`\`\`\n${result.data_url}\n\`\`\`\n\n🎮 **其他链接:**\n• [🎮 独立游戏页面](${result.game_url})\n• [📱 嵌入版本](${result.embed_url})\n\n现在可以在左侧游戏窗口中玩你的自定义关卡了！`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n📄 **JSON Data URL:**\n\`\`\`\n${result.data_url}\n\`\`\`\n\n🎮 **Additional Links:**\n• [🎮 Standalone Game Page](${result.game_url})\n• [📱 Embedded Version](${result.embed_url})\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
@@ -161,7 +166,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const followUpMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: '🎮 **你的新地图已经在左侧游戏中激活！**\n\n现在你可以:\n• 使用方向键和空格键玩你的自定义关卡\n• 要求我修改地图的任何部分\n• 随时上传新的手绘地图\n\n游戏中显示的是你刚刚上传的手绘地图，而不是默认关卡。试试看吧！',
+          content: '🎮 **Your new map is now active in the game on the left!**\n\nNow you can:\n• Use arrow keys and spacebar to play your custom level\n• Ask me to modify any part of the map\n• Upload new hand-drawn maps anytime\n\nThe game now displays your uploaded hand-drawn map, not the default level. Give it a try!',
           timestamp: new Date()
         }
         setMessages(prev => [...prev, followUpMessage])
