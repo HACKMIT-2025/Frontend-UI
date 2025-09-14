@@ -1,5 +1,16 @@
 // API Service for OpenRouter and Anthropic Integration
 
+interface ConversationMessage {
+  role: string;
+  content: string;
+}
+
+interface APIStatus {
+  openRouter: boolean;
+  anthropic: boolean;
+  ready: boolean;
+}
+
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -10,13 +21,16 @@ const MODELS = {
 };
 
 class ChatAPI {
+  private openRouterKey: string;
+  private anthropicKey: string;
+
   constructor() {
-    this.openRouterKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
-    this.anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY || '';
+    this.openRouterKey = (import.meta as any).env?.VITE_OPENROUTER_API_KEY || '';
+    this.anthropicKey = (import.meta as any).env?.VITE_ANTHROPIC_API_KEY || '';
   }
 
   // Send text message using Cerebras Llama 70B via OpenRouter
-  async sendTextMessage(message, conversationHistory = []) {
+  async sendTextMessage(message: string, conversationHistory: ConversationMessage[] = []): Promise<string> {
     try {
       const response = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -51,7 +65,7 @@ class ChatAPI {
   }
 
   // Send image with message using Anthropic Claude
-  async sendImageMessage(message, imageBase64, conversationHistory = []) {
+  async sendImageMessage(message: string, imageBase64: string, conversationHistory: ConversationMessage[] = []): Promise<string> {
     try {
       // Format messages for Anthropic API
       const formattedHistory = conversationHistory.map(msg => ({
@@ -105,7 +119,7 @@ class ChatAPI {
   }
 
   // Stream text response from Cerebras Llama 70B
-  async streamTextMessage(message, conversationHistory = [], onChunk) {
+  async streamTextMessage(message: string, conversationHistory: ConversationMessage[] = [], onChunk: (chunk: string) => void): Promise<string> {
     try {
       const response = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -131,7 +145,7 @@ class ChatAPI {
         throw new Error(`OpenRouter API error: ${response.status}`);
       }
 
-      const reader = response.body.getReader();
+      const reader = response.body!.getReader();
       const decoder = new TextDecoder();
       let fullResponse = '';
 
@@ -169,7 +183,7 @@ class ChatAPI {
   }
 
   // Check if API keys are configured
-  isConfigured() {
+  isConfigured(): APIStatus {
     return {
       openRouter: !!this.openRouterKey,
       anthropic: !!this.anthropicKey,
@@ -178,7 +192,7 @@ class ChatAPI {
   }
 
   // Update API keys
-  updateKeys(openRouterKey, anthropicKey) {
+  updateKeys(openRouterKey?: string, anthropicKey?: string): void {
     if (openRouterKey) this.openRouterKey = openRouterKey;
     if (anthropicKey) this.anthropicKey = anthropicKey;
   }

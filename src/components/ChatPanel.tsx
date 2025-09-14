@@ -26,8 +26,6 @@ const ChatPanel: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false)
   const [showMapUpload, setShowMapUpload] = useState(true)
   const [isProcessingMap, setIsProcessingMap] = useState(false)
-  const [mapData, setMapData] = useState<any>(null)
-  const [currentProcessingStep, setCurrentProcessingStep] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -124,7 +122,6 @@ const ChatPanel: React.FC = () => {
 
     // Process the map
     const result = await mapProcessing.processMap(file, (step: string, message: string) => {
-      setCurrentProcessingStep(message)
       console.log(`Processing step: ${step} - ${message}`)
     })
 
@@ -132,7 +129,6 @@ const ChatPanel: React.FC = () => {
     setShowMapUpload(false)
 
     if (result.success) {
-      setMapData(result.data)
 
       // Add success message
       const aiMessage: Message = {

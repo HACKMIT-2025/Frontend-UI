@@ -1,23 +1,73 @@
 // Map Processing Service - Integration with OpenCV Backend
+
+
+interface GamePosition {
+  x: number;
+  y: number;
+  area?: number;
+}
+
+interface Platform {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  centroid: { x: number; y: number };
+  area: number;
+  vertices: { x: number; y: number }[];
+}
+
+interface GameData {
+  startPosition: GamePosition | null;
+  endPosition: GamePosition | null;
+  platforms: Platform[];
+  worldSize: { width: number; height: number };
+  metadata: {
+    totalShapes: number;
+    startPoints: number;
+    endPoints: number;
+    platforms: number;
+    scaleFactor: number;
+  };
+}
+
+interface ProcessingResult {
+  success: boolean;
+  data?: GameData;
+  rawData?: any;
+  summary?: string;
+  error?: string;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  issues: string[];
+}
+
+interface DrawingInstructions {
+  title: string;
+  steps: string[];
+  tips: string[];
+}
+
+type ProgressCallback = (step: string, message: string) => void;
 const OPENCV_API_URL = 'https://25hackmit--image-recognition-api-process-base64.modal.run';
 
 class MapProcessingService {
   constructor() {
-    this.processingSteps = [
-      { id: 'scan', label: 'Scanning image', icon: '🔍' },
-      { id: 'detect', label: 'Detecting shapes', icon: '📐' },
-      { id: 'generate', label: 'Generating level', icon: '🎮' }
-    ];
+    // Processing service initialized
   }
 
   // Convert file to base64
-  async fileToBase64(file) {
+  async fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         // Remove data:image/...;base64, prefix
-        const base64 = reader.result.split(',')[1];
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
         resolve(base64);
       };
       reader.onerror = error => reject(error);
@@ -25,7 +75,7 @@ class MapProcessingService {
   }
 
   // Process hand-drawn map with OpenCV backend
-  async processMap(imageFile, onProgress) {
+  async processMap(imageFile: File, onProgress?: ProgressCallback): Promise<ProcessingResult> {
     try {
       // Step 1: Scanning
       if (onProgress) onProgress('scan', 'Scanning your hand-drawn map...');
@@ -76,13 +126,13 @@ class MapProcessingService {
       console.error('Error processing map:', error);
       return {
         success: false,
-        error: error.message || 'Failed to process map'
+        error: error instanceof Error ? error.message : 'Failed to process map'
       };
     }
   }
 
   // Transform OpenCV data to game-compatible format
-  transformToGameData(cvData) {
+  transformToGameData(cvData: any): GameData {
     const { starting_points, end_points, rigid_bodies, image_size, scale_factor } = cvData;
 
     // Scale coordinates to game world
@@ -101,7 +151,7 @@ class MapProcessingService {
         area: end_points[0].area
       } : null,
 
-      platforms: rigid_bodies.map((body, index) => ({
+      platforms: rigid_bodies.map((body: any, index: number) => ({
         id: `platform_${index}`,
         x: body.bounding_box[0] * gameScale,
         y: body.bounding_box[1] * gameScale,
@@ -112,7 +162,7 @@ class MapProcessingService {
           y: body.centroid[1] * gameScale
         },
         area: body.area,
-        vertices: body.contour_points ? body.contour_points.map(point => ({
+        vertices: body.contour_points ? body.contour_points.map((point: any) => ({
           x: point[0] * gameScale,
           y: point[1] * gameScale
         })) : []
@@ -134,8 +184,8 @@ class MapProcessingService {
   }
 
   // Generate a summary message for the user
-  generateSummary(gameData) {
-    const { startPosition, endPosition, platforms, metadata } = gameData;
+  generateSummary(gameData: GameData): string {
+    const { startPosition, endPosition, platforms } = gameData;
 
     let summary = `Successfully processed your map! Here's what I found:\n\n`;
 
@@ -162,7 +212,7 @@ class MapProcessingService {
   }
 
   // Validate if the processed data is playable
-  validateGameData(gameData) {
+  validateGameData(gameData: GameData): ValidationResult {
     const issues = [];
 
     if (!gameData.startPosition) {
@@ -188,7 +238,7 @@ class MapProcessingService {
   }
 
   // Generate example map instructions
-  getDrawingInstructions() {
+  getDrawingInstructions(): DrawingInstructions {
     return {
       title: 'How to Draw Your Mario Map',
       steps: [
