@@ -51,8 +51,8 @@ class DatabaseService {
     }
 
     try {
-      // Use Neon's SQL over HTTP API
-      const response = await fetch(`https://${this.config.endpoint}/sql`, {
+      // Use Neon API for SQL execution
+      const response = await fetch(`https://console.neon.tech/api/v2/projects/${this.config.projectId}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -71,7 +71,9 @@ class DatabaseService {
             mapData.game_url,
             mapData.title || `Mario Level ${mapData.level_id}`,
             mapData.description || 'Hand-drawn Mario level created with AI'
-          ]
+          ],
+          database: 'hackmit',
+          branch_id: this.config.branchId
         })
       })
 
@@ -86,9 +88,11 @@ class DatabaseService {
         throw new Error(result.error.message || 'Unknown database error')
       }
 
+      // Neon API returns rows in result.rows
+      const insertedRow = result.rows?.[0]
       return {
         success: true,
-        mapId: result.results[0]?.id?.toString()
+        mapId: insertedRow?.id?.toString()
       }
 
     } catch (error) {
@@ -109,7 +113,7 @@ class DatabaseService {
     }
 
     try {
-      const response = await fetch(`https://${this.config.endpoint}/sql`, {
+      const response = await fetch(`https://console.neon.tech/api/v2/projects/${this.config.projectId}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -122,7 +126,9 @@ class DatabaseService {
             ORDER BY created_at DESC
             LIMIT $1;
           `,
-          params: [limit]
+          params: [limit],
+          database: 'hackmit',
+          branch_id: this.config.branchId
         })
       })
 
@@ -138,7 +144,7 @@ class DatabaseService {
 
       return {
         success: true,
-        maps: result.results || []
+        maps: result.rows || []
       }
 
     } catch (error) {
