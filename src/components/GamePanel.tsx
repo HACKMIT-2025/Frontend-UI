@@ -2,15 +2,15 @@ import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 're
 import './GamePanel.css'
 
 interface GamePanelProps {
-  levelDataUrl?: string;
+  embedUrl?: string;
   onLevelLoaded?: () => void;
 }
 
 interface GamePanelRef {
-  loadNewLevel: (dataUrl: string) => void;
+  loadNewLevel: (embedUrl: string) => void;
 }
 
-const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelDataUrl, onLevelLoaded }, ref) => {
+const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ embedUrl, onLevelLoaded }, ref) => {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [gameScore, setGameScore] = useState(0)
   const [gameStatus, setGameStatus] = useState('Ready')
@@ -20,16 +20,22 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelDataUrl, onLe
     // Set the iframe source to the embedded Mario game
     let gameUrl = 'https://frontend-mario.vercel.app/embed'
 
-    if (levelDataUrl) {
-      // Use the level data URL if provided
-      gameUrl += `?data=${encodeURIComponent(levelDataUrl)}`
-      setCurrentLevelUrl(levelDataUrl)
+    if (embedUrl) {
+      // Use the complete embed URL from API response
+      gameUrl = embedUrl
+      setCurrentLevelUrl(embedUrl)
+      console.log('🎮 Loading game with embed URL:', embedUrl)
+      setGameStatus('Loading New Map...')
+    } else {
+      console.log('🎮 Loading default game (no custom map)')
+      setGameStatus('Ready')
     }
 
     if (iframeRef.current) {
+      console.log('🔄 Setting iframe src to:', gameUrl)
       iframeRef.current.src = gameUrl
     }
-  }, [levelDataUrl])
+  }, [embedUrl])
 
   useEffect(() => {
     // Listen for PostMessage events from the embedded game
@@ -96,11 +102,13 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelDataUrl, onLe
     setGameStatus('Ready')
   }
 
-  const loadNewLevel = (dataUrl: string) => {
-    // Send the data URL to the embedded game
-    sendGameMessage('SET_LEVEL_DATA_URL', { dataUrl })
-    setCurrentLevelUrl(dataUrl)
-    setGameStatus('Loading Level...')
+  const loadNewLevel = (embedUrl: string) => {
+    // Update the iframe src with the new embed URL directly
+    if (iframeRef.current) {
+      iframeRef.current.src = embedUrl
+      setCurrentLevelUrl(embedUrl)
+      setGameStatus('Loading Level...')
+    }
   }
 
   // Expose the loadNewLevel function via ref

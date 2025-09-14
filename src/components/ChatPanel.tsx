@@ -133,16 +133,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
-      // Call the callback to load the level in the game panel
-      if (result.data_url && onLevelGenerated) {
-        onLevelGenerated(result.data_url)
+      // Call the callback to load the level in the game panel using embed_url
+      if (result.embed_url && onLevelGenerated) {
+        console.log('📤 API returned embed_url:', result.embed_url)
+        console.log('📄 API returned data_url:', result.data_url)
+        console.log('🆔 API returned level_id:', result.level_id)
+        onLevelGenerated(result.embed_url)
       }
 
-      // Add success message with level information
+      // Add success message with shape detection details and JSON URL
+      let shapeDetails = '';
+      if (result.levelData?.level_data) {
+        const data = result.levelData.level_data;
+        shapeDetails = `\n🔍 **Shape Detection Results:**\n• 🔺 **Triangles (Start Points):** ${data.starting_points?.length || 0} detected\n• ⭕ **Circles (End Points):** ${data.end_points?.length || 0} detected\n• 🧱 **Walls/Platforms:** ${data.rigid_bodies?.length || 0} detected\n• 📐 **Image Size:** ${data.image_size?.[0] || 0}x${data.image_size?.[1] || 0} pixels\n`;
+      }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ ${result.summary || 'Map processed successfully!'}\n\n🔗 **Level URLs:**\n• **Game:** [Play Level](${result.game_url})\n• **Embed:** [Embed Version](${result.embed_url})\n• **Data:** [JSON Data](${result.data_url})`,
+        content: `✅ **新地图创建成功！** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **你的手绘地图已加载到左侧游戏中！**\n\n📄 **JSON Data URL:**\n\`\`\`\n${result.data_url}\n\`\`\`\n\n🎮 **其他链接:**\n• [🎮 独立游戏页面](${result.game_url})\n• [📱 嵌入版本](${result.embed_url})\n\n现在可以在左侧游戏窗口中玩你的自定义关卡了！`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
@@ -152,17 +161,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const followUpMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: '🎯 Your map has been loaded into the game!\n\nYou can now:\n• Play the level using the arrow keys and spacebar\n• Ask me to modify any part of the map\n• Upload a new map anytime\n\nWhat would you like to change?',
+          content: '🎮 **你的新地图已经在左侧游戏中激活！**\n\n现在你可以:\n• 使用方向键和空格键玩你的自定义关卡\n• 要求我修改地图的任何部分\n• 随时上传新的手绘地图\n\n游戏中显示的是你刚刚上传的手绘地图，而不是默认关卡。试试看吧！',
           timestamp: new Date()
         }
         setMessages(prev => [...prev, followUpMessage])
       }, 1000)
     } else {
-      // Add error message
+      // Add detailed error message
+      let errorAdvice = '';
+      if (result.error?.includes('timeout')) {
+        errorAdvice = '\n\n💡 **Suggestion:** Your image might be too large or complex. Try:\n• Using a smaller image (under 5MB)\n• Simplifying your drawing\n• Ensuring good lighting and contrast';
+      } else if (result.error?.includes('not accessible')) {
+        errorAdvice = '\n\n💡 **Suggestion:** The level was created but the data couldn\'t be validated. Please try uploading again.';
+      } else if (result.error?.includes('failed')) {
+        errorAdvice = '\n\n💡 **Suggestion:** Make sure your drawing has:\n• Clear, dark lines\n• A triangle (▲) for the start\n• A circle (●) for the end\n• Rectangles/shapes for platforms';
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `❌ Sorry, I couldn't process your map: ${result.error}\n\nPlease try again with a clearer image.`,
+        content: `❌ **Processing Failed**\n\n${result.error}${errorAdvice}`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])

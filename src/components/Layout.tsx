@@ -4,14 +4,14 @@ import ChatPanel from './ChatPanel'
 import './Layout.css'
 
 const Layout: React.FC = () => {
-  const [currentLevelDataUrl, setCurrentLevelDataUrl] = useState<string | null>(null)
+  const [currentEmbedUrl, setCurrentEmbedUrl] = useState<string | null>(null)
   const gamePanelRef = useRef<any>(null)
 
-  const handleLevelGenerated = (dataUrl: string) => {
-    setCurrentLevelDataUrl(dataUrl)
+  const handleLevelGenerated = (embedUrl: string) => {
+    setCurrentEmbedUrl(embedUrl)
     // If the game panel has a method to load new levels, call it
     if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
-      gamePanelRef.current.loadNewLevel(dataUrl)
+      gamePanelRef.current.loadNewLevel(embedUrl)
     }
   }
 
@@ -24,7 +24,7 @@ const Layout: React.FC = () => {
       <div className="game-section">
         <GamePanel
           ref={gamePanelRef}
-          levelDataUrl={currentLevelDataUrl || undefined}
+          embedUrl={currentEmbedUrl || undefined}
           onLevelLoaded={handleLevelLoaded}
         />
       </div>
