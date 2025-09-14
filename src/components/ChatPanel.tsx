@@ -5,14 +5,17 @@ import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
 import chatAPI from '../services/api'
 import mapProcessing from '../services/mapProcessing'
+import databaseService from '../services/database'
 import './ChatPanel.css'
 
 export interface Message {
   id: string
-  type: 'user' | 'ai'
+  type: 'user' | 'ai' | 'system'
   content: string
   timestamp: Date
   image?: string
+  component?: 'publish-options'
+  componentProps?: any
 }
 
 interface ChatPanelProps {
@@ -33,6 +36,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   const [isProcessingMap, setIsProcessingMap] = useState(false)
   const [showAILoader, setShowAILoader] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState('')
+  const [currentLevelData, setCurrentLevelData] = useState<{ jsonUrl: string, embedUrl: string, gameUrl: string, levelId: string } | null>(null)
+  const [isPublishing, setIsPublishing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -141,6 +146,80 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     ;(window as any).mapProcessingResult = result
   }
 
+  const handlePublish = async (shouldPublish: boolean, metadata?: { title: string; description: string }) => {
+    if (!shouldPublish || !currentLevelData) {
+      // Remove the publish options message
+      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
+
+      if (!shouldPublish) {
+        // Add decline message
+        const declineMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: '👍 **No problem!** Your level remains private and you can still play it locally. You can always publish it later by uploading a new map!',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, declineMessage])
+      }
+      return
+    }
+
+    setIsPublishing(true)
+
+    // Update the publish options to show publishing state
+    setMessages(prev => prev.map(msg =>
+      msg.component === 'publish-options'
+        ? { ...msg, componentProps: { ...msg.componentProps, isPublishing: true } }
+        : msg
+    ))
+
+    try {
+      const publishResult = await databaseService.publishMap({
+        level_id: currentLevelData.levelId,
+        json_url: currentLevelData.jsonUrl,
+        embed_url: currentLevelData.embedUrl,
+        game_url: currentLevelData.gameUrl,
+        title: metadata?.title,
+        description: metadata?.description
+      })
+
+      // Remove publish options message
+      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
+
+      if (publishResult.success) {
+        const successMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `🎉 **Level Published Successfully!**\n\nYour Mario level is now live and discoverable by other players!\n\n🌐 **Public Details:**\n• **Title:** ${metadata?.title || `Mario Level ${currentLevelData.levelId}`}\n• **Description:** ${metadata?.description || 'Hand-drawn Mario level created with AI'}\n• **Level ID:** \`${currentLevelData.levelId}\`\n• **Database ID:** \`${publishResult.mapId}\`\n\n🎮 **Share Links:**\n• [🎮 Play Online](${currentLevelData.gameUrl})\n• [📱 Embedded Version](${currentLevelData.embedUrl})\n\n🏆 Your level is now part of the community gallery! Others can discover and play your creation.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, successMessage])
+      } else {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `❌ **Publishing Failed**\n\n${publishResult.error}\n\n💡 **Don't worry!** Your level is still playable locally. You can try publishing again later.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      // Remove publish options message
+      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
+
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ **Publishing Error**\n\nSomething went wrong during publishing. Please try again later.\n\n💡 Your level is still playable locally!`,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsPublishing(false)
+      setCurrentLevelData(null)
+    }
+  }
+
   const handleAILoaderComplete = () => {
     const result = (window as any).mapProcessingResult
 
@@ -149,6 +228,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
+      // Store level data for publishing
+      setCurrentLevelData({
+        jsonUrl: result.data_url,
+        embedUrl: result.embed_url,
+        gameUrl: result.game_url,
+        levelId: result.level_id
+      })
+
       // Call the callback to load the level in the game panel using JSON data URL
       if (result.data_url && onLevelGenerated) {
         console.log('📤 API returned embed_url:', result.embed_url)
@@ -177,16 +264,38 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       }
       setMessages(prev => [...prev, aiMessage])
 
+      // Add publish options if database is configured
+      if (databaseService.isConfigured()) {
+        setTimeout(() => {
+          const publishMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            type: 'system',
+            content: '',
+            timestamp: new Date(),
+            component: 'publish-options',
+            componentProps: {
+              levelId: result.level_id,
+              jsonUrl: result.data_url,
+              embedUrl: result.embed_url,
+              gameUrl: result.game_url,
+              onPublish: handlePublish,
+              isPublishing: isPublishing
+            }
+          }
+          setMessages(prev => [...prev, publishMessage])
+        }, 1000)
+      }
+
       // Add follow-up message
       setTimeout(() => {
         const followUpMessage: Message = {
-          id: (Date.now() + 2).toString(),
+          id: (Date.now() + 3).toString(),
           type: 'ai',
           content: '🎮 **Your new map is now active in the game on the left!**\n\nNow you can:\n• Use arrow keys and spacebar to play your custom level\n• Ask me to modify any part of the map\n• Upload new hand-drawn maps anytime\n\nThe game now displays your uploaded hand-drawn map, not the default level. Give it a try!',
           timestamp: new Date()
         }
         setMessages(prev => [...prev, followUpMessage])
-      }, 1000)
+      }, databaseService.isConfigured() ? 2000 : 1000)
     } else {
       // Add detailed error message
       let errorAdvice = '';

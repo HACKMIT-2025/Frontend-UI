@@ -1,5 +1,6 @@
 import React from 'react'
 import { Message } from './ChatPanel'
+import PublishOptions from './PublishOptions'
 import './MessageList.css'
 
 interface MessageListProps {
@@ -21,12 +22,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isTyping }) => {
       {messages.map((message) => (
         <div key={message.id} className={`message ${message.type}`}>
           <div className="message-avatar">
-            {message.type === 'user' ? '👤' : '🤖'}
+            {message.type === 'user' ? '👤' : message.type === 'system' ? '⚙️' : '🤖'}
           </div>
           <div className="message-content">
             <div className="message-header">
               <span className="message-sender">
-                {message.type === 'user' ? 'You' : 'AI Assistant'}
+                {message.type === 'user' ? 'You' : message.type === 'system' ? 'System' : 'AI Assistant'}
               </span>
               <span className="message-time">{formatTime(message.timestamp)}</span>
             </div>
@@ -35,7 +36,11 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isTyping }) => {
                 <img src={message.image} alt="Uploaded content" />
               </div>
             )}
-            <div className="message-text">{message.content}</div>
+            {message.component === 'publish-options' ? (
+              <PublishOptions {...message.componentProps} />
+            ) : (
+              <div className="message-text">{message.content}</div>
+            )}
           </div>
         </div>
       ))}

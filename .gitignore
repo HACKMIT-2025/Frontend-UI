@@ -4,3 +4,4 @@
 .env.local
 dist/
 *.log
+Frontend_Mario/
