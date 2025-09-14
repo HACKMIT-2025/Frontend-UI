@@ -171,15 +171,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
+      // Construct correct URL format
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?json=${encodeURIComponent(result.data_url)}`
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?json=${encodeURIComponent(result.data_url)}`
+
       // Call the callback to load the level in the game panel using JSON data URL
       if (result.data_url && onLevelGenerated) {
         console.log('📤 API returned embed_url:', result.embed_url)
         console.log('📄 API returned data_url:', result.data_url)
         console.log('🆔 API returned level_id:', result.level_id)
+        console.log('🔧 Corrected game_url:', correctGameUrl)
+        console.log('🔧 Corrected embed_url:', correctEmbedUrl)
         // Pass the JSON URL for native game loading
         onLevelGenerated({
           jsonUrl: result.data_url,
-          embedUrl: result.embed_url,
+          embedUrl: correctEmbedUrl,
           levelId: result.level_id
         })
       }
@@ -194,14 +200,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${result.game_url}) - Full game version\n• [📱 Embed Version](${result.embed_url}) - Embeddable version\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${correctGameUrl}) - Full game version\n• [📱 Embed Version](${correctEmbedUrl}) - Embeddable version\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
 
       // Automatically copy the game URL and show share options
       setTimeout(() => {
-        copyToClipboard(result.game_url, 'Game Share')
+        copyToClipboard(correctGameUrl, 'Game Share')
       }, 1000)
 
       // Add follow-up message with copy buttons
@@ -209,7 +215,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const shareMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the buttons below to copy the links again:\n\n**🎮 [Click to copy game link](${result.game_url})**\n**📱 [Click to copy embed link](${result.embed_url})**`,
+          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the buttons below to copy the links again:\n\n**🎮 [Click to copy game link](${correctGameUrl})**\n**📱 [Click to copy embed link](${correctEmbedUrl})**`,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, shareMessage])
