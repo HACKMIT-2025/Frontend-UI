@@ -19,7 +19,8 @@ html {
 
 body {
   background-color: var(--color-dark-bg);
-  color: white;
+  background: linear-gradient(135deg, #0f0f1a 0%, #0a0a15 50%, #0d0d18 100%);
+  color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
@@ -35,10 +36,11 @@ body {
 }
 
 .glass-card {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(25, 25, 35, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 .gradient-text {
@@ -74,7 +76,7 @@ body {
 
 @keyframes glow {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
+  50% { opacity: 0.85; }
 }
 
 .animate-gradient {

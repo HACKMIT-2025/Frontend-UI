@@ -7,15 +7,16 @@
 }
 
 .chat-header {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(25, 25, 35, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 1rem 1rem 0 0;
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .chat-header:hover {
@@ -68,8 +69,8 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(8px);
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(10px);
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -91,9 +92,110 @@
 
 .chat-input-container {
   padding: 1rem 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(25, 25, 35, 0.95);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 0 0 1rem 1rem;
   border-top: none;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Upload Prompt Styles */
+.upload-prompt {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.upload-map-button {
+  background: linear-gradient(135deg, var(--color-accent-green), var(--color-accent-blue));
+  border: none;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow:
+    0 4px 20px rgba(52, 178, 152, 0.3),
+    0 0 40px rgba(52, 178, 152, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px rgba(52, 178, 152, 0.3),
+      0 0 40px rgba(52, 178, 152, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 4px 30px rgba(52, 178, 152, 0.5),
+      0 0 60px rgba(52, 178, 152, 0.3);
+  }
+}
+
+.upload-map-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.upload-map-button:hover::before {
+  left: 100%;
+}
+
+.upload-map-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 6px 30px rgba(52, 178, 152, 0.5),
+    0 0 60px rgba(52, 178, 152, 0.4);
+  background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+}
+
+.upload-map-button:active {
+  transform: translateY(-1px) scale(1);
+}
+
+.upload-map-button .button-icon {
+  font-size: 1.4rem;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.upload-map-button span:last-child {
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }

@@ -55,9 +55,9 @@
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.75rem;
   padding: 0.5rem;
   transition: all 0.3s ease;
@@ -65,12 +65,13 @@
 
 .input-container:focus-within {
   border-color: var(--color-accent-green);
-  box-shadow: 0 0 0 3px rgba(52, 178, 152, 0.1);
+  box-shadow: 0 0 0 3px rgba(52, 178, 152, 0.2);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .input-container:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(52, 178, 152, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(52, 178, 152, 0.4);
 }
 
 .image-upload-btn {
@@ -108,7 +109,7 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 1);
   font-size: 0.875rem;
   line-height: 1.4;
   resize: none;
@@ -122,8 +123,8 @@
 }
 
 .message-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.6);
+  opacity: 0.9;
 }
 
 .message-input::-webkit-scrollbar {
@@ -140,9 +141,9 @@
 }
 
 .send-button {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.6);
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 0.5rem;
