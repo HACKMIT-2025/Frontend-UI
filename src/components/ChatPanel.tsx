@@ -200,7 +200,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${correctGameUrl}) - Full game version\n• [📱 Embed Version](${correctEmbedUrl}) - Embeddable version\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${correctGameUrl}) - Share this link with friends!\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
@@ -215,7 +215,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const shareMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the buttons below to copy the links again:\n\n**🎮 [Click to copy game link](${correctGameUrl})**\n**📱 [Click to copy embed link](${correctEmbedUrl})**`,
+          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the button below to copy the link again:\n\n**🎮 [Click to copy share link](${correctGameUrl})**`,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, shareMessage])
