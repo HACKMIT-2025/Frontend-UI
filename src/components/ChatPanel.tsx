@@ -5,17 +5,14 @@ import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
 import chatAPI from '../services/api'
 import mapProcessing from '../services/mapProcessing'
-import databaseService from '../services/database'
 import './ChatPanel.css'
 
 export interface Message {
   id: string
-  type: 'user' | 'ai' | 'system'
+  type: 'user' | 'ai'
   content: string
   timestamp: Date
   image?: string
-  component?: 'publish-options'
-  componentProps?: any
 }
 
 interface ChatPanelProps {
@@ -36,8 +33,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   const [isProcessingMap, setIsProcessingMap] = useState(false)
   const [showAILoader, setShowAILoader] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState('')
-  const [currentLevelData, setCurrentLevelData] = useState<{ jsonUrl: string, embedUrl: string, gameUrl: string, levelId: string } | null>(null)
-  const [isPublishing, setIsPublishing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -146,77 +141,25 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     ;(window as any).mapProcessingResult = result
   }
 
-  const handlePublish = async (shouldPublish: boolean, metadata?: { title: string; description: string }) => {
-    if (!shouldPublish || !currentLevelData) {
-      // Remove the publish options message
-      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
-
-      if (!shouldPublish) {
-        // Add decline message
-        const declineMessage: Message = {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: '👍 **No problem!** Your level remains private and you can still play it locally. You can always publish it later by uploading a new map!',
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, declineMessage])
-      }
-      return
-    }
-
-    setIsPublishing(true)
-
-    // Update the publish options to show publishing state
-    setMessages(prev => prev.map(msg =>
-      msg.component === 'publish-options'
-        ? { ...msg, componentProps: { ...msg.componentProps, isPublishing: true } }
-        : msg
-    ))
-
+  const copyToClipboard = async (text: string, type: string) => {
     try {
-      const publishResult = await databaseService.publishMap({
-        level_id: currentLevelData.levelId,
-        json_url: currentLevelData.jsonUrl,
-        embed_url: currentLevelData.embedUrl,
-        game_url: currentLevelData.gameUrl,
-        title: metadata?.title,
-        description: metadata?.description
-      })
+      await navigator.clipboard.writeText(text)
 
-      // Remove publish options message
-      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
-
-      if (publishResult.success) {
-        const successMessage: Message = {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `🎉 **Level Published Successfully!**\n\nYour Mario level is now live and discoverable by other players!\n\n🌐 **Public Details:**\n• **Title:** ${metadata?.title || `Mario Level ${currentLevelData.levelId}`}\n• **Description:** ${metadata?.description || 'Hand-drawn Mario level created with AI'}\n• **Level ID:** \`${currentLevelData.levelId}\`\n• **Database ID:** \`${publishResult.mapId}\`\n\n🎮 **Share Links:**\n• [🎮 Play Online](${currentLevelData.gameUrl})\n• [📱 Embedded Version](${currentLevelData.embedUrl})\n\n🏆 Your level is now part of the community gallery! Others can discover and play your creation.`,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, successMessage])
-      } else {
-        const errorMessage: Message = {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `❌ **Publishing Failed**\n\n${publishResult.error}\n\n💡 **Don't worry!** Your level is still playable locally. You can try publishing again later.`,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, errorMessage])
+      const successMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `✅ **${type} URL已复制到剪贴板！**\n\n现在你可以将链接分享给朋友，让他们也来玩你的自制Mario关卡！`,
+        timestamp: new Date()
       }
+      setMessages(prev => [...prev, successMessage])
     } catch (error) {
-      // Remove publish options message
-      setMessages(prev => prev.filter(msg => msg.component !== 'publish-options'))
-
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `❌ **Publishing Error**\n\nSomething went wrong during publishing. Please try again later.\n\n💡 Your level is still playable locally!`,
+        content: `❌ **复制失败**\n\n请手动复制以下链接：\n\`\`\`\n${text}\n\`\`\``,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsPublishing(false)
-      setCurrentLevelData(null)
     }
   }
 
@@ -228,14 +171,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
-      // Store level data for publishing
-      setCurrentLevelData({
-        jsonUrl: result.data_url,
-        embedUrl: result.embed_url,
-        gameUrl: result.game_url,
-        levelId: result.level_id
-      })
-
       // Call the callback to load the level in the game panel using JSON data URL
       if (result.data_url && onLevelGenerated) {
         console.log('📤 API returned embed_url:', result.embed_url)
@@ -249,44 +184,38 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         })
       }
 
-      // Add success message with shape detection details and JSON URL
+      // Add success message with shape detection details and share buttons
       let shapeDetails = '';
       if (result.levelData?.level_data) {
         const data = result.levelData.level_data;
-        shapeDetails = `\n🔍 **Shape Detection Results:**\n• 🔺 **Triangles (Start Points):** ${data.starting_points?.length || 0} detected\n• ⭕ **Circles (End Points):** ${data.end_points?.length || 0} detected\n• 🧱 **Walls/Platforms:** ${data.rigid_bodies?.length || 0} detected\n• 📐 **Image Size:** ${data.image_size?.[0] || 0}x${data.image_size?.[1] || 0} pixels\n`;
+        shapeDetails = `\n🔍 **Shape Detection Results:**\n• ⬡ **Hexagons (Start Points):** ${data.starting_points?.length || 0} detected\n• ✕ **Crosses (End Points):** ${data.end_points?.length || 0} detected\n• ▲ **Triangles (Spikes):** ${data.spikes?.length || 0} detected\n• ● **Circles (Coins):** ${data.coins?.length || 0} detected\n• ■ **Other Shapes (Platforms):** ${data.rigid_bodies?.length || 0} detected\n• 📐 **Image Size:** ${data.image_size?.[0] || 0}x${data.image_size?.[1] || 0} pixels\n`;
       }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n📄 **JSON Data URL:**\n\`\`\`\n${result.data_url}\n\`\`\`\n\n🎮 **Additional Links:**\n• [🎮 Standalone Game Page](${result.game_url})\n• [📱 Embedded Version](${result.embed_url})\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${result.game_url}) - 完整游戏版本\n• [📱 Embed Version](${result.embed_url}) - 嵌入版本\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
 
-      // Add publish options if database is configured
-      if (databaseService.isConfigured()) {
-        setTimeout(() => {
-          const publishMessage: Message = {
-            id: (Date.now() + 2).toString(),
-            type: 'system',
-            content: '',
-            timestamp: new Date(),
-            component: 'publish-options',
-            componentProps: {
-              levelId: result.level_id,
-              jsonUrl: result.data_url,
-              embedUrl: result.embed_url,
-              gameUrl: result.game_url,
-              onPublish: handlePublish,
-              isPublishing: isPublishing
-            }
-          }
-          setMessages(prev => [...prev, publishMessage])
-        }, 1000)
-      }
+      // Automatically copy the game URL and show share options
+      setTimeout(() => {
+        copyToClipboard(result.game_url, '游戏分享')
+      }, 1000)
 
-      // Add follow-up message
+      // Add follow-up message with copy buttons
+      setTimeout(() => {
+        const shareMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          type: 'ai',
+          content: `🔗 **分享你的关卡！**\n\n游戏链接已自动复制到剪贴板，你可以：\n• 直接粘贴分享给朋友\n• 发布到社交媒体\n• 保存到收藏夹\n\n点击下面的按钮可以重新复制链接：\n\n**🎮 [点击复制游戏链接](${result.game_url})**\n**📱 [点击复制嵌入链接](${result.embed_url})**`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, shareMessage])
+      }, 2000)
+
+      // Add gameplay instructions
       setTimeout(() => {
         const followUpMessage: Message = {
           id: (Date.now() + 3).toString(),
@@ -295,7 +224,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
           timestamp: new Date()
         }
         setMessages(prev => [...prev, followUpMessage])
-      }, databaseService.isConfigured() ? 2000 : 1000)
+      }, 3000)
     } else {
       // Add detailed error message
       let errorAdvice = '';
