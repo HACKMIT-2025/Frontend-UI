@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import GamePanel from './GamePanel'
 import ChatPanel from './ChatPanel'
+import DrawingGuideModal from './DrawingGuideModal'
 import './Layout.css'
 
 const Layout: React.FC = () => {
@@ -10,6 +11,7 @@ const Layout: React.FC = () => {
     levelId?: string
   } | null>(null)
   const gamePanelRef = useRef<any>(null)
+  const [showGuideModal, setShowGuideModal] = useState(false)
 
   const handleLevelGenerated = (levelData: {
     jsonUrl?: string,
@@ -33,6 +35,19 @@ const Layout: React.FC = () => {
     console.log('Level loaded in game panel')
   }
 
+  // Show guide modal on first visit
+  useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('hasSeenDrawingGuide')
+    if (!hasSeenGuide) {
+      setShowGuideModal(true)
+      localStorage.setItem('hasSeenDrawingGuide', 'true')
+    }
+  }, [])
+
+  const handleCloseGuideModal = () => {
+    setShowGuideModal(false)
+  }
+
   return (
     <div className="layout">
       <div className="game-section">
@@ -47,6 +62,11 @@ const Layout: React.FC = () => {
       <div className="chat-section">
         <ChatPanel onLevelGenerated={handleLevelGenerated} />
       </div>
+
+      <DrawingGuideModal
+        isOpen={showGuideModal}
+        onClose={handleCloseGuideModal}
+      />
     </div>
   )
 }

@@ -1,0 +1,511 @@
+/* AI Code Generator Loader - Cyberpunk Tech Style */
+.ai-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(0, 255, 127, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 191, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(138, 43, 226, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0a0a 0%, #1a0033 50%, #000a1a 100%);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  animation: matrixRain 20s linear infinite;
+}
+
+@keyframes matrixRain {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+/* Matrix-style background effect */
+.ai-loader-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(90deg, transparent 98%, rgba(0, 255, 127, 0.03) 100%),
+    linear-gradient(0deg, transparent 98%, rgba(0, 255, 127, 0.03) 100%);
+  background-size: 50px 50px;
+  animation: grid-move 2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes grid-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+.ai-loader-container {
+  background:
+    linear-gradient(135deg,
+      rgba(0, 20, 40, 0.95) 0%,
+      rgba(10, 0, 30, 0.95) 50%,
+      rgba(0, 10, 20, 0.95) 100%
+    );
+  border: 2px solid transparent;
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 900px;
+  box-shadow:
+    0 0 50px rgba(0, 255, 127, 0.2),
+    0 0 100px rgba(0, 191, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated border */
+.ai-loader-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 20px;
+  padding: 2px;
+  background: linear-gradient(45deg,
+    #00ff7f, #00bfff, #8a2be2, #ff1493, #00ff7f
+  );
+  background-size: 400% 400%;
+  animation: gradientBorder 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: exclude;
+  mask-composite: exclude;
+}
+
+@keyframes gradientBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Header Section */
+.ai-loader-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 255, 127, 0.3);
+}
+
+.ai-loader-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.ai-icon {
+  font-size: 2.5rem;
+  animation: robotPulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 127, 0.6));
+}
+
+@keyframes robotPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+}
+
+.ai-loader-title h2 {
+  color: #00ff7f;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0;
+  text-shadow:
+    0 0 10px rgba(0, 255, 127, 0.5),
+    0 0 20px rgba(0, 255, 127, 0.3);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.loading-indicator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #00ff7f, #00bfff);
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+.pulse-dot:nth-child(2) { animation-delay: 0.3s; }
+.pulse-dot:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes pulseDot {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+    box-shadow: 0 0 15px rgba(0, 255, 127, 0.8);
+  }
+}
+
+.ai-stats {
+  display: flex;
+  gap: 30px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.stat-label {
+  color: rgba(0, 191, 255, 0.8);
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stat-value {
+  color: #00bfff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+}
+
+/* Progress Section */
+.progress-section {
+  margin-bottom: 30px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.current-step {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.step-number {
+  background: linear-gradient(135deg, #8a2be2, #ff1493);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+}
+
+.step-title {
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.progress-percent {
+  color: #00ff7f;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(0, 255, 127, 0.6);
+}
+
+.progress-bar {
+  position: relative;
+  background: rgba(0, 0, 0, 0.5);
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 255, 127, 0.3);
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg,
+    #00ff7f 0%,
+    #00bfff 50%,
+    #8a2be2 100%
+  );
+  border-radius: 6px;
+  transition: width 0.3s ease;
+  box-shadow:
+    0 0 20px rgba(0, 255, 127, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  animation: progressGlow 2s ease-in-out infinite;
+}
+
+@keyframes progressGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 20px rgba(0, 255, 127, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(0, 255, 127, 0.9),
+      0 0 40px rgba(0, 191, 255, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+}
+
+.progress-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 30px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: progressSweep 2s ease-in-out infinite;
+}
+
+@keyframes progressSweep {
+  0% { left: -30px; }
+  100% { left: 100%; }
+}
+
+.step-description {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Code Terminal */
+.code-terminal {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(0, 255, 127, 0.3);
+  border-radius: 10px;
+  margin-bottom: 30px;
+  overflow: hidden;
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(0, 255, 127, 0.2);
+}
+
+.terminal-header {
+  background: linear-gradient(135deg, #2d2d2d, #1a1a1a);
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid rgba(0, 255, 127, 0.3);
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.control-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+.control-dot.red { background: #ff5f56; }
+.control-dot.yellow { background: #ffbd2e; }
+.control-dot.green { background: #27ca3f; }
+
+.terminal-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
+}
+
+.terminal-body {
+  padding: 20px;
+  height: 200px;
+  overflow-y: auto;
+}
+
+.code-content {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.code-content code {
+  color: #00ff7f;
+  text-shadow: 0 0 5px rgba(0, 255, 127, 0.3);
+}
+
+.typing-animation {
+  white-space: pre-wrap;
+}
+
+.cursor {
+  color: #00bfff;
+  font-weight: bold;
+  animation: cursorBlink 1s infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Neural Network Visualization */
+.neural-network {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  height: 150px;
+}
+
+.network-title {
+  color: #8a2be2;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
+}
+
+.network-nodes {
+  position: relative;
+  height: 100%;
+}
+
+.network-node {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(138, 43, 226, 0.6);
+  border: 2px solid rgba(138, 43, 226, 0.8);
+  animation: networkPulse 2s ease-in-out infinite;
+}
+
+.network-node.active {
+  background: #ff1493;
+  border-color: #ff1493;
+  box-shadow:
+    0 0 20px rgba(255, 20, 147, 0.8),
+    0 0 40px rgba(255, 20, 147, 0.4);
+  animation: networkActive 1s ease-in-out infinite;
+}
+
+@keyframes networkPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes networkActive {
+  0%, 100% {
+    transform: scale(1.2);
+    box-shadow:
+      0 0 20px rgba(255, 20, 147, 0.8),
+      0 0 40px rgba(255, 20, 147, 0.4);
+  }
+  50% {
+    transform: scale(1.5);
+    box-shadow:
+      0 0 30px rgba(255, 20, 147, 1),
+      0 0 60px rgba(255, 20, 147, 0.6);
+  }
+}
+
+.network-connection {
+  position: absolute;
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(180deg,
+    transparent,
+    rgba(0, 191, 255, 0.6),
+    transparent
+  );
+  animation: dataFlow 1.5s ease-in-out infinite;
+}
+
+@keyframes dataFlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ai-loader-container {
+    width: 95%;
+    padding: 20px;
+  }
+
+  .ai-loader-header {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .ai-stats {
+    gap: 20px;
+  }
+
+  .progress-info {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .current-step {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .terminal-body {
+    height: 150px;
+  }
+
+  .neural-network {
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-loader-title h2 {
+    font-size: 1.4rem;
+  }
+
+  .code-content {
+    font-size: 0.8rem;
+  }
+
+  .step-title {
+    font-size: 1.1rem;
+  }
+
+  .progress-percent {
+    font-size: 1.2rem;
+  }
+}

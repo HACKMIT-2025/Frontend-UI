@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import MapUploadModal from './MapUploadModal'
+import AICodeGeneratorLoader from './AICodeGeneratorLoader'
 import chatAPI from '../services/api'
 import mapProcessing from '../services/mapProcessing'
 import './ChatPanel.css'
@@ -23,13 +24,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     {
       id: '1',
       type: 'ai',
-      content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Let\'s get started:**\nPlease upload a photo of your hand-drawn map. Remember:\n• Draw a **triangle (▲)** for the start point\n• Draw a **circle (●)** for the end point\n• Draw **rectangles or other shapes** for platforms\n\nClick the button below to upload your map! 👇',
+      content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Drawing Guide:**\n⬡ **Hexagon** = Start Point\n✕ **Cross/X** = End Point  \n▲ **Triangle** = Spikes/Hazards\n● **Circle** = Coins/Collectibles\n■ **Other Shapes** = Platforms/Walls\n\n**Let\'s get started:**\nUpload a photo of your hand-drawn map following the guide above!\n\nClick the button below to upload your map! 👇',
       timestamp: new Date(),
     }
   ])
   const [isTyping, setIsTyping] = useState(false)
   const [showMapUpload, setShowMapUpload] = useState(true)
   const [isProcessingMap, setIsProcessingMap] = useState(false)
+  const [showAILoader, setShowAILoader] = useState(false)
+  const [uploadedFileName, setUploadedFileName] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -112,7 +115,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
 
 
   const handleMapUpload = async (file: File) => {
-    setIsProcessingMap(true)
+    setUploadedFileName(file.name)
+    setShowAILoader(true)
 
     // Add user message with image
     const userMessage: Message = {
@@ -124,11 +128,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     }
     setMessages(prev => [...prev, userMessage])
 
-    // Process the map
-    const result = await mapProcessing.processMap(file, (step: string, message: string) => {
-      console.log(`Processing step: ${step} - ${message}`)
-    })
+    // Start both: AI loader animation AND actual processing
+    const [result] = await Promise.all([
+      mapProcessing.processMap(file, (step: string, message: string) => {
+        console.log(`Processing step: ${step} - ${message}`)
+      }),
+      // Just wait for AI loader to complete (3-5s)
+      new Promise(resolve => setTimeout(resolve, 1)) // Immediate resolve, let AI loader control timing
+    ])
 
+    // Store result for when AI loader completes
+    ;(window as any).mapProcessingResult = result
+  }
+
+  const handleAILoaderComplete = () => {
+    const result = (window as any).mapProcessingResult
+
+    setShowAILoader(false)
     setIsProcessingMap(false)
     setShowMapUpload(false)
 
@@ -240,6 +256,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         onClose={() => setShowMapUpload(false)}
         onUpload={handleMapUpload}
         isProcessing={isProcessingMap}
+      />
+
+      <AICodeGeneratorLoader
+        isVisible={showAILoader}
+        onComplete={handleAILoaderComplete}
+        uploadedFileName={uploadedFileName}
       />
     </div>
   )
