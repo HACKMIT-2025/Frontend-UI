@@ -38,6 +38,10 @@ interface ProcessingResult {
   rawData?: any;
   summary?: string;
   error?: string;
+  level_id?: string;
+  data_url?: string;
+  game_url?: string;
+  embed_url?: string;
 }
 
 interface ValidationResult {
@@ -52,7 +56,7 @@ interface DrawingInstructions {
 }
 
 type ProgressCallback = (step: string, message: string) => void;
-const OPENCV_API_URL = 'https://25hackmit--image-recognition-api-process-base64.modal.run';
+const OPENCV_API_URL = 'https://25hackmit--image-recognition-api-fastapi-app.modal.run/api/levels';
 
 class MapProcessingService {
   constructor() {
@@ -86,18 +90,14 @@ class MapProcessingService {
       // Step 2: Detecting shapes
       if (onProgress) onProgress('detect', 'Detecting triangles, circles, and platforms...');
 
-      // Call OpenCV backend
+      // Call new OpenCV backend API
       const response = await fetch(OPENCV_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image_base64: base64Image,
-          simplify_contours: true,
-          max_vertices: 200,
-          simplification_factor: 0.1,
-          use_convex_decomposition: false
+          image_base64: base64Image
         })
       });
 
@@ -105,22 +105,24 @@ class MapProcessingService {
         throw new Error(`Processing failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const result = await response.json();
 
       // Step 3: Generating level
-      if (onProgress) onProgress('generate', 'Creating Mario level from detected shapes...');
-
-      // Process the response data
-      const processedData = this.transformToGameData(data);
+      if (onProgress) onProgress('generate', 'Creating Mario level and generating URLs...');
 
       // Add a small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Return the full result from the API
       return {
         success: true,
-        data: processedData,
-        rawData: data,
-        summary: this.generateSummary(processedData)
+        level_id: result.level_id,
+        data_url: result.data_url,
+        game_url: result.game_url,
+        embed_url: result.embed_url,
+        rawData: result,
+        summary: `Level created successfully! Level ID: ${result.level_id}`,
+        data: undefined // We'll use the URLs instead of processing the data locally
       };
     } catch (error) {
       console.error('Error processing map:', error);

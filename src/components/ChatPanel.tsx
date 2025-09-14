@@ -14,7 +14,11 @@ export interface Message {
   image?: string
 }
 
-const ChatPanel: React.FC = () => {
+interface ChatPanelProps {
+  onLevelGenerated?: (dataUrl: string) => void;
+}
+
+const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -129,12 +133,16 @@ const ChatPanel: React.FC = () => {
     setShowMapUpload(false)
 
     if (result.success) {
+      // Call the callback to load the level in the game panel
+      if (result.data_url && onLevelGenerated) {
+        onLevelGenerated(result.data_url)
+      }
 
-      // Add success message
+      // Add success message with level information
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: result.summary || 'Map processed successfully!',
+        content: `✅ ${result.summary || 'Map processed successfully!'}\n\n🔗 **Level URLs:**\n• **Game:** [Play Level](${result.game_url})\n• **Embed:** [Embed Version](${result.embed_url})\n• **Data:** [JSON Data](${result.data_url})`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])

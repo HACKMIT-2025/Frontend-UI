@@ -15,6 +15,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   transition: all 0.3s ease;
 }
 
@@ -47,6 +48,50 @@
   font-size: 0.75rem;
   font-weight: 500;
   animation: glow 2s ease-in-out infinite;
+}
+
+.game-status.playing {
+  background: rgba(0, 255, 127, 0.2);
+  border-color: #00ff7f;
+  color: #00ff7f;
+}
+
+.game-status.game-over {
+  background: rgba(255, 69, 0, 0.2);
+  border-color: #ff4500;
+  color: #ff4500;
+  animation: none;
+}
+
+.game-status.victory {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+  color: #ffd700;
+  animation: victoryGlow 1s ease-in-out infinite;
+}
+
+.game-status.paused {
+  background: rgba(255, 255, 0, 0.2);
+  border-color: #ffff00;
+  color: #ffff00;
+  animation: none;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.game-score {
+  background: rgba(0, 153, 255, 0.2);
+  border: 1px solid var(--color-accent-blue);
+  color: var(--color-accent-blue);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
 }
 
 .game-controls {
@@ -98,4 +143,22 @@
   border: none;
   background: transparent;
   border-radius: 0 0 1rem 1rem;
+}
+
+@keyframes victoryGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(52, 178, 152, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(52, 178, 152, 0.8), 0 0 25px rgba(52, 178, 152, 0.6);
+  }
 }
