@@ -76,10 +76,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       let aiResponse: string
 
       // Check if API keys are configured
-      const apiStatus = chatAPI.isConfigured()
+      const apiStatus = await chatAPI.isConfigured()
 
       if (!apiStatus.ready) {
-        aiResponse = "Please configure your API keys in the .env file. You need VITE_OPENROUTER_API_KEY for text chat and VITE_ANTHROPIC_API_KEY for image recognition."
+        aiResponse = "Backend API is not available. Please check the backend server status."
       } else if (imageBase64 && apiStatus.anthropic) {
         // Use Anthropic for image recognition
         aiResponse = await chatAPI.sendImageMessage(content, imageBase64, conversationHistory)
@@ -87,9 +87,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         // Use Cerebras Llama 70B via OpenRouter for text
         aiResponse = await chatAPI.sendTextMessage(content, conversationHistory)
       } else if (imageBase64 && !apiStatus.anthropic) {
-        aiResponse = "Image recognition requires Anthropic API key. Please add VITE_ANTHROPIC_API_KEY to your .env file."
+        aiResponse = "Image recognition is currently unavailable. Please try text chat instead."
       } else {
-        aiResponse = "Text chat requires OpenRouter API key. Please add VITE_OPENROUTER_API_KEY to your .env file."
+        aiResponse = "Text chat is currently unavailable. Please try again later."
       }
 
       const aiMessage: Message = {
