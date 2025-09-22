@@ -40,6 +40,7 @@ interface ProcessingResult {
   summary?: string;
   error?: string;
   level_id?: string;
+  modal_level_id?: string;
   data_url?: string;
   game_url?: string;
   embed_url?: string;
