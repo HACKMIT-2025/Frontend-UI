@@ -60,8 +60,42 @@ interface DrawingInstructions {
 type ProgressCallback = (step: string, message: string) => void;
 
 class MapProcessingService {
+  private backendUrl: string;
+
   constructor() {
-    // Processing service initialized
+    this.backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+    console.log('MapProcessingService initialized with backend URL:', this.backendUrl);
+  }
+
+  // 检查后端API健康状态
+  async checkBackendHealth(): Promise<{ isHealthy: boolean; message: string; version?: string }> {
+    try {
+      const response = await fetch(`${this.backendUrl}/`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          isHealthy: true,
+          message: 'Backend is healthy',
+          version: data.version || 'unknown'
+        };
+      } else {
+        return {
+          isHealthy: false,
+          message: `Backend responded with status: ${response.status}`
+        };
+      }
+    } catch (error) {
+      return {
+        isHealthy: false,
+        message: `Failed to connect to backend: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
   }
 
   // Convert file to base64
@@ -80,26 +114,38 @@ class MapProcessingService {
   }
 
   // 前端上传函数 - 通过后端API
-  async uploadImage(imageFile: File): Promise<any> {
-    // 1. 将文件转换为 base64
-    const base64String = await this.fileToBase64(imageFile);
+  async uploadImage(imageFile: File, prompt: string = "Analyze this hand-drawn map and create a Mario game level"): Promise<any> {
+    try {
+      // 1. 将文件转换为 base64
+      const base64String = await this.fileToBase64(imageFile);
 
-    // 2. 发送到我们的后端API，由后端处理Modal调用和数据库存储
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-    const response = await fetch(`${backendUrl}/api/modal/generate-level`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        image_base64: base64String,
-        difficulty: 'medium',
-        game_type: 'platformer'
-      })
-    });
+      // 2. 发送到我们的后端API，由后端处理OpenCV识别和数据库存储
+      console.log('Uploading to backend:', this.backendUrl);
 
-    const result = await response.json();
-    return result;
+      const response = await fetch(`${this.backendUrl}/api/modal/generate-level`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_base64: base64String,
+          prompt: prompt
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backend API error (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Backend response:', result);
+
+      return result;
+    } catch (error) {
+      console.error('Error calling backend API:', error);
+      throw error;
+    }
   }
 
   // Process hand-drawn map with OpenCV backend
@@ -107,39 +153,51 @@ class MapProcessingService {
     try {
       // Step 1: Scanning
       if (onProgress) onProgress('scan', 'Scanning your hand-drawn map...');
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       // Step 2: Detecting shapes
-      if (onProgress) onProgress('detect', 'Detecting triangles, circles, and platforms...');
+      if (onProgress) onProgress('detect', 'Using OpenCV to detect shapes (triangles, circles, platforms)...');
 
-      // 使用简化的上传函数
-      const result = await this.uploadImage(imageFile);
+      // 调用后端API进行OpenCV图像识别
+      const result = await this.uploadImage(imageFile, "Analyze this hand-drawn Mario level map. Detect triangles as start points, circles as end points, and other shapes as platforms.");
 
-      // Validate required fields - now checking for our database response
-      if (!result.success || !result.level_id) {
-        throw new Error('Invalid API response: level creation failed');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 验证后端响应
+      if (!result.success) {
+        throw new Error(result.message || 'Backend processing failed');
       }
 
       // Step 3: Generating level
-      if (onProgress) onProgress('generate', 'Level saved to database successfully...');
+      if (onProgress) onProgress('generate', 'Generating Mario level from detected shapes...');
 
-      // The level data is now stored in our database, accessible via our API
-      let levelData = result.data || null;
+      // 处理后端返回的数据
+      let gameData: GameData | undefined = undefined;
+      if (result.data) {
+        // 如果后端返回了OpenCV处理的数据，转换为游戏格式
+        gameData = this.transformOpenCVToGameData(result.data);
+      }
 
-      // Add a small delay for better UX
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Return the result with our database level ID
+      // 生成处理摘要
+      const summary = gameData
+        ? this.generateSummary(gameData)
+        : `Level created successfully! Level ID: ${result.level_id}`;
+
+      // 返回处理结果
       return {
         success: true,
-        level_id: result.level_id, // Our database level ID
-        modal_level_id: result.modal_level_id, // Original Modal level ID for reference
-        data_url: undefined, // No longer exposing direct Modal URLs
-        game_url: undefined,
-        embed_url: undefined,
+        level_id: result.level_id,
+        modal_level_id: result.modal_level_id,
         rawData: result,
-        levelData: levelData,
-        summary: `Level created successfully! Database Level ID: ${result.level_id}`,
-        data: levelData // Return the actual level data
+        levelData: result.data,
+        data: gameData,
+        summary: summary,
+        // 不再暴露直接的Modal URLs，改为通过我们的API访问
+        data_url: undefined,
+        game_url: undefined,
+        embed_url: undefined
       };
 
     } catch (error) {
@@ -151,7 +209,60 @@ class MapProcessingService {
     }
   }
 
-  // Transform OpenCV data to game-compatible format
+  // Transform backend OpenCV data to game-compatible format
+  transformOpenCVToGameData(backendData: any): GameData {
+    // 处理后端返回的OpenCV识别数据
+    const { starting_points, end_points, rigid_bodies, image_size, scale_factor } = backendData;
+
+    // 默认缩放因子
+    const gameScale = 1 / (scale_factor || 0.3);
+
+    return {
+      startPosition: starting_points && starting_points.length > 0 ? {
+        x: starting_points[0].coordinates[0] * gameScale,
+        y: starting_points[0].coordinates[1] * gameScale,
+        area: starting_points[0].area || 100
+      } : null,
+
+      endPosition: end_points && end_points.length > 0 ? {
+        x: end_points[0].coordinates[0] * gameScale,
+        y: end_points[0].coordinates[1] * gameScale,
+        area: end_points[0].area || 100
+      } : null,
+
+      platforms: (rigid_bodies || []).map((body: any, index: number) => ({
+        id: `platform_${index}`,
+        x: body.centroid ? body.centroid[0] * gameScale : 0,
+        y: body.centroid ? body.centroid[1] * gameScale : 0,
+        width: body.bounding_box ? body.bounding_box[2] * gameScale : 50,
+        height: body.bounding_box ? body.bounding_box[3] * gameScale : 50,
+        centroid: {
+          x: body.centroid ? body.centroid[0] * gameScale : 0,
+          y: body.centroid ? body.centroid[1] * gameScale : 0
+        },
+        area: body.area || 1000,
+        vertices: body.contour_points ? body.contour_points.map((point: any) => ({
+          x: point[0] * gameScale,
+          y: point[1] * gameScale
+        })) : []
+      })),
+
+      worldSize: {
+        width: image_size ? image_size[1] * gameScale : 800,
+        height: image_size ? image_size[0] * gameScale : 600
+      },
+
+      metadata: {
+        totalShapes: (starting_points?.length || 0) + (end_points?.length || 0) + (rigid_bodies?.length || 0),
+        startPoints: starting_points?.length || 0,
+        endPoints: end_points?.length || 0,
+        platforms: rigid_bodies?.length || 0,
+        scaleFactor: scale_factor || 0.3
+      }
+    };
+  }
+
+  // Transform OpenCV data to game-compatible format (legacy)
   transformToGameData(cvData: any): GameData {
     const { starting_points, end_points, rigid_bodies, image_size, scale_factor } = cvData;
 

@@ -35,12 +35,11 @@ const Layout: React.FC = () => {
     console.log('Level loaded in game panel')
   }
 
-  // Show guide modal on first visit
+  // Show guide modal on every visit unless user opted out
   useEffect(() => {
-    const hasSeenGuide = localStorage.getItem('hasSeenDrawingGuide')
-    if (!hasSeenGuide) {
+    const dontShowAgain = localStorage.getItem('dontShowDrawingGuide')
+    if (!dontShowAgain) {
       setShowGuideModal(true)
-      localStorage.setItem('hasSeenDrawingGuide', 'true')
     }
   }, [])
 
