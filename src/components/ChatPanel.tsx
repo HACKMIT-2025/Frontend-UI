@@ -171,23 +171,27 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setShowMapUpload(false)
 
     if (result.success) {
-      // Construct correct URL format
-      const correctGameUrl = `https://frontend-mario.vercel.app/play?json=${encodeURIComponent(result.data_url)}`
-      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?json=${encodeURIComponent(result.data_url)}`
+      // Generate URLs using ID mode
+      let correctGameUrl = '';
+      let correctEmbedUrl = '';
 
-      // Call the callback to load the level in the game panel using JSON data URL
-      if (result.data_url && onLevelGenerated) {
-        console.log('📤 API returned embed_url:', result.embed_url)
-        console.log('📄 API returned data_url:', result.data_url)
+      if (result.level_id) {
+        // Use ID mode - pass level_id directly to the game
+        correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
+        correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+
         console.log('🆔 API returned level_id:', result.level_id)
-        console.log('🔧 Corrected game_url:', correctGameUrl)
-        console.log('🔧 Corrected embed_url:', correctEmbedUrl)
-        // Pass the JSON URL for native game loading
-        onLevelGenerated({
-          jsonUrl: result.data_url,
-          embedUrl: correctEmbedUrl,
-          levelId: result.level_id
-        })
+        console.log('🔧 Game URL (ID mode):', correctGameUrl)
+        console.log('🔧 Embed URL (ID mode):', correctEmbedUrl)
+
+        // Pass the embed URL for ID-based game loading
+        if (onLevelGenerated) {
+          onLevelGenerated({
+            jsonUrl: correctEmbedUrl,
+            embedUrl: correctEmbedUrl,
+            levelId: result.level_id
+          })
+        }
       }
 
       // Add success message with shape detection details and share buttons
