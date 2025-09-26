@@ -184,12 +184,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         console.log('🔧 Game URL (ID mode):', correctGameUrl)
         console.log('🔧 Embed URL (ID mode):', correctEmbedUrl)
 
-        // Pass the embed URL for ID-based game loading
+        // Pass the level ID for direct ID-based game loading
         if (onLevelGenerated) {
           onLevelGenerated({
+            levelId: result.level_id,
             jsonUrl: correctEmbedUrl,
-            embedUrl: correctEmbedUrl,
-            levelId: result.level_id
+            embedUrl: correctEmbedUrl
           })
         }
       }
