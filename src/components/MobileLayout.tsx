@@ -42,8 +42,7 @@ const MobileLayout: React.FC = () => {
 
     if (result?.success && result.level_id) {
       // Generate URLs using ID mode (same as ChatPanel.tsx)
-      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
-      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+        const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
 
       const levelData = {
         jsonUrl: correctEmbedUrl,
