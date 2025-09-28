@@ -40,10 +40,14 @@ const MobileLayout: React.FC = () => {
     const result = (window as any).mapProcessingResult
     setShowAILoader(false)
 
-    if (result?.success && result.data_url) {
+    if (result?.success && result.level_id) {
+      // Generate URLs using ID mode (same as ChatPanel.tsx)
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+
       const levelData = {
-        jsonUrl: result.data_url,
-        embedUrl: `https://frontend-mario.vercel.app/embed?json=${encodeURIComponent(result.data_url)}`,
+        jsonUrl: correctEmbedUrl,
+        embedUrl: correctEmbedUrl,
         levelId: result.level_id
       }
 
@@ -52,7 +56,7 @@ const MobileLayout: React.FC = () => {
 
       // Load level in game panel
       if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
-        gamePanelRef.current.loadNewLevel(levelData.jsonUrl)
+        gamePanelRef.current.loadNewLevel(levelData.levelId)
       }
     } else {
       // Show error and go back to upload

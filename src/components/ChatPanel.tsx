@@ -170,7 +170,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setIsProcessingMap(false)
     setShowMapUpload(false)
 
-    if (result.success) {
+    if (result?.success && result.level_id) {
       // Generate URLs using ID mode
       let correctGameUrl = '';
       let correctEmbedUrl = '';
@@ -253,6 +253,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
+
+      // Re-enable upload on error
+      setShowMapUpload(true)
     }
   }
 
