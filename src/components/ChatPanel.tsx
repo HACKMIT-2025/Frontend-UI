@@ -170,28 +170,34 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     setIsProcessingMap(false)
     setShowMapUpload(false)
 
+    console.log('🔍 HandleAILoaderComplete - result:', result)
+    console.log('🔍 result?.success:', result?.success)
+    console.log('🔍 result.level_id:', result.level_id)
+    console.log('🔍 Condition check:', result?.success && result.level_id)
+
     if (result?.success && result.level_id) {
       // Generate URLs using ID mode
-      let correctGameUrl = '';
-      let correctEmbedUrl = '';
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
 
-      if (result.level_id) {
-        // Use ID mode - pass level_id directly to the game
-        correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
-        correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+      console.log('🆔 API returned level_id:', result.level_id)
+      console.log('🔧 Game URL (ID mode):', correctGameUrl)
+      console.log('🔧 Embed URL (ID mode):', correctEmbedUrl)
 
-        console.log('🆔 API returned level_id:', result.level_id)
-        console.log('🔧 Game URL (ID mode):', correctGameUrl)
-        console.log('🔧 Embed URL (ID mode):', correctEmbedUrl)
-
-        // Pass the level ID for direct ID-based game loading
-        if (onLevelGenerated) {
-          onLevelGenerated({
-            levelId: result.level_id,
-            jsonUrl: correctEmbedUrl,
-            embedUrl: correctEmbedUrl
-          })
-        }
+      // Pass the level ID for direct ID-based game loading
+      if (onLevelGenerated) {
+        console.log('🎮 Calling onLevelGenerated with:', {
+          levelId: result.level_id,
+          jsonUrl: correctEmbedUrl,
+          embedUrl: correctEmbedUrl
+        })
+        onLevelGenerated({
+          levelId: result.level_id,
+          jsonUrl: correctEmbedUrl,
+          embedUrl: correctEmbedUrl
+        })
+      } else {
+        console.log('⚠️ onLevelGenerated is not available')
       }
 
       // Add success message with shape detection details and share buttons
@@ -249,7 +255,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `❌ **Processing Failed**\n\n${result.error}${errorAdvice}`,
+        content: `❌ **Processing Failed**\n\n${result?.error || 'Unknown error occurred'}${errorAdvice}`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])

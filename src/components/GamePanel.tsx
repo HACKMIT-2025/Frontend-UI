@@ -6,6 +6,7 @@ interface GamePanelProps {
   jsonUrl?: string;
   levelId?: string;
   onLevelLoaded?: () => void;
+  isMobile?: boolean;
 }
 
 interface GamePanelRef {
@@ -13,7 +14,7 @@ interface GamePanelRef {
 }
 
 
-const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, onLevelLoaded }, ref) => {
+const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, onLevelLoaded, isMobile = false }, ref) => {
   const [error, setError] = useState<string | null>(null)
   const [iframeUrl, setIframeUrl] = useState<string>('')
 
@@ -23,7 +24,7 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, 
 
     if (levelId) {
       // Use ID mode - direct level ID
-      const url = `${baseUrl}?id=${levelId}`
+      const url = `${baseUrl}?id=${levelId}${isMobile ? '&mobile=true' : ''}`
       setIframeUrl(url)
       setError(null)
       onLevelLoaded?.()
@@ -31,7 +32,7 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, 
       console.log('🔗 Embed URL (ID mode):', url)
     } else if (jsonUrl) {
       // Fallback to JSON URL mode (legacy support)
-      const url = `${baseUrl}?json=${encodeURIComponent(jsonUrl)}`
+      const url = `${baseUrl}?json=${encodeURIComponent(jsonUrl)}${isMobile ? '&mobile=true' : ''}`
       setIframeUrl(url)
       setError(null)
       onLevelLoaded?.()
@@ -39,31 +40,36 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, 
       console.log('🔗 Embed URL (JSON mode):', url)
     } else {
       // Default URL without specific map
-      setIframeUrl(baseUrl)
+      const url = `${baseUrl}${isMobile ? '?mobile=true' : ''}`
+      setIframeUrl(url)
       console.log('🎮 Loading default game')
     }
-  }, [levelId, jsonUrl, onLevelLoaded])
+  }, [levelId, jsonUrl, onLevelLoaded, isMobile])
 
   // Initialize with default URL on component mount
   useEffect(() => {
     if (!levelId && !jsonUrl && !iframeUrl) {
       const baseUrl = 'https://frontend-mario.vercel.app/embed'
-      setIframeUrl(baseUrl)
+      const url = `${baseUrl}${isMobile ? '?mobile=true' : ''}`
+      setIframeUrl(url)
       console.log('🎮 Initialized with default game')
     }
-  }, [])
+  }, [isMobile])
 
 
 
 
   // Function to load new level (exposed via ref) - now using ID mode
   const loadNewLevel = (newLevelId: string) => {
-    console.log('🔄 Loading new level with ID:', newLevelId)
+    console.log('🔄 GamePanel loadNewLevel called with ID:', newLevelId)
+    console.log('🔄 isMobile:', isMobile)
     const baseUrl = 'https://frontend-mario.vercel.app/embed'
-    const url = `${baseUrl}?id=${newLevelId}`
+    const url = `${baseUrl}?id=${newLevelId}${isMobile ? '&mobile=true' : ''}`
+    console.log('🔄 Generated URL:', url)
     setIframeUrl(url)
     setError(null)
     onLevelLoaded?.()
+    console.log('✅ GamePanel loadNewLevel completed')
   }
 
   // Expose the loadNewLevel function via ref

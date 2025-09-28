@@ -18,23 +18,31 @@ const Layout: React.FC = () => {
     embedUrl?: string,
     levelId?: string
   }) => {
+    console.log('🔄 Layout handleLevelGenerated called with:', levelData)
     setCurrentLevelData(levelData)
     console.log('🔄 Level data received in Layout:', levelData)
 
     // Load level using ID mode (preferred) or fallback to URL mode
     if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
+      console.log('✅ GamePanel ref is available')
       if (levelData.levelId) {
         // Use ID mode - pass level ID directly
+        console.log('🎮 About to call loadNewLevel with ID:', levelData.levelId)
         gamePanelRef.current.loadNewLevel(levelData.levelId)
         console.log('🎮 Loading level with ID:', levelData.levelId)
       } else {
         // Fallback to URL mode for legacy support
         const urlToLoad = levelData.jsonUrl || levelData.embedUrl
         if (urlToLoad) {
+          console.log('🎮 About to call loadNewLevel with URL:', urlToLoad)
           gamePanelRef.current.loadNewLevel(urlToLoad)
           console.log('🎮 Loading level with URL:', urlToLoad)
+        } else {
+          console.log('❌ No levelId or URL to load')
         }
       }
+    } else {
+      console.log('❌ GamePanel ref is not available or loadNewLevel method missing')
     }
   }
 

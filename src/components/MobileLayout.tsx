@@ -40,6 +40,11 @@ const MobileLayout: React.FC = () => {
     const result = (window as any).mapProcessingResult
     setShowAILoader(false)
 
+    console.log('🔍 Mobile HandleAILoaderComplete - result:', result)
+    console.log('🔍 Mobile result?.success:', result?.success)
+    console.log('🔍 Mobile result.level_id:', result.level_id)
+    console.log('🔍 Mobile Condition check:', result?.success && result.level_id)
+
     if (result?.success && result.level_id) {
       // Generate URLs using ID mode (same as ChatPanel.tsx)
         const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
@@ -115,8 +120,10 @@ const MobileLayout: React.FC = () => {
           <div className="game-container">
             <GamePanel
               ref={gamePanelRef}
+              levelId={currentLevelData?.levelId}
               jsonUrl={currentLevelData?.jsonUrl}
               embedUrl={currentLevelData?.embedUrl}
+              isMobile={true}
               onLevelLoaded={() => console.log('Mobile level loaded')}
             />
           </div>
