@@ -184,23 +184,26 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border: 2px solid transparent;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
-  background: linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple));
+  background: linear-gradient(135deg, #0099ff, #8b5cf6);
   color: white;
-  min-height: 40px;
+  min-height: 44px;
+  position: relative;
+  z-index: 10;
+  outline: none;
 }
 
 .message-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 153, 255, 0.3);
-  background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-blue));
+  background: linear-gradient(135deg, #8b5cf6, #0099ff);
 }
 
 .message-button:active {

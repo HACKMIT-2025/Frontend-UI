@@ -27,6 +27,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       type: 'ai',
       content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Let\'s get started:**\nUpload a photo of your hand-drawn map!\n\nClick the button below to upload your map! 👇',
       timestamp: new Date(),
+      buttons: [
+        {
+          id: 'test-initial',
+          text: '🧪 Test Initial Button',
+          action: () => {
+            console.log('🧪 Initial test button clicked!')
+            alert('Initial test button works!')
+          }
+        }
+      ]
     }
   ])
   const [isTyping, setIsTyping] = useState(false)
@@ -188,11 +198,38 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
 
   const handlePublicSharingResponse = async (wantsToShare: boolean, publicName?: string) => {
     console.log('🎯 handlePublicSharingResponse called with:', { wantsToShare, publicName, currentLevelId })
-    if (!currentLevelId) {
-      console.log('❌ No currentLevelId, returning')
+
+    // Try to get level ID from multiple sources
+    const result = (window as any).mapProcessingResult
+    const levelId = currentLevelId || result?.level_id
+
+    console.log('🔍 Level ID sources:', { currentLevelId, resultLevelId: result?.level_id, finalLevelId: levelId })
+
+    if (!levelId) {
+      console.log('❌ No level ID found, showing error message to user')
+
+      // Show error message to user
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ **Error: Level ID not found**\n\nSorry, there was an issue with your map. Please try uploading again.`,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMessage])
       return
     }
 
+
+    // Show confirmation message first
+    const confirmationMessage: Message = {
+      id: Date.now().toString(),
+      type: 'ai',
+      content: wantsToShare
+        ? `🌍 **Great choice!** You want to share your map publicly.`
+        : `🔒 **Understood!** You want to keep your map private.`,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, confirmationMessage])
 
     if (wantsToShare) {
       // Ask for public name
@@ -201,10 +238,12 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         const namePromptMessage: Message = {
           id: Date.now().toString(),
           type: 'ai',
-          content: `🌟 **Great! Let's make your map public!**\n\nPlease enter a name for your public map:\n\n(This name will be visible to other players in the community)`,
+          content: `🌟 **Let's make your map public!**\n\nPlease enter a name for your public map:\n\n(This name will be visible to other players in the community)`,
           timestamp: new Date()
         }
-        setMessages(prev => [...prev, namePromptMessage])
+        setTimeout(() => {
+          setMessages(prev => [...prev, namePromptMessage])
+        }, 500)
         return
       }
 
@@ -336,6 +375,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       setMessages(prev => [...prev, aiMessage])
 
       // Store the current level ID and ask about public sharing
+      console.log('🔍 Setting currentLevelId to:', result.level_id)
       setCurrentLevelId(result.level_id)
 
       // Ask about public sharing
@@ -346,6 +386,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
           content: `🌟 **Share with the Community?**\n\nWould you like to share your map publicly with the community?\n\nYou can always change this setting later.`,
           timestamp: new Date(),
           buttons: [
+            {
+              id: 'test-button',
+              text: '🧪 Test Button',
+              action: () => {
+                console.log('🧪 Test button clicked!')
+                alert('Test button works!')
+              }
+            },
             {
               id: 'share-public',
               text: '🌍 Share Publicly',
