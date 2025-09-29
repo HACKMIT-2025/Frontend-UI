@@ -88,14 +88,6 @@ const MobileLayout: React.FC = () => {
             <p>上传你的手绘马里奥地图</p>
           </div>
 
-          <div className="upload-instructions">
-            <h3>绘图指南：</h3>
-            <div className="instruction-item">⬡ <strong>六边形</strong> = 起始点</div>
-            <div className="instruction-item">✕ <strong>十字/X</strong> = 终点</div>
-            <div className="instruction-item">▲ <strong>三角形</strong> = 尖刺/危险</div>
-            <div className="instruction-item">● <strong>圆形</strong> = 金币/收集品</div>
-            <div className="instruction-item">■ <strong>其他形状</strong> = 平台/墙壁</div>
-          </div>
 
           <button
             className="upload-button"

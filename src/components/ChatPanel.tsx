@@ -24,7 +24,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     {
       id: '1',
       type: 'ai',
-      content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Drawing Guide:**\n⬡ **Hexagon** = Start Point\n✕ **Cross/X** = End Point  \n▲ **Triangle** = Spikes/Hazards\n● **Circle** = Coins/Collectibles\n■ **Other Shapes** = Platforms/Walls\n\n**Let\'s get started:**\nUpload a photo of your hand-drawn map following the guide above!\n\nClick the button below to upload your map! 👇',
+      content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Let\'s get started:**\nUpload a photo of your hand-drawn map!\n\nClick the button below to upload your map! 👇',
       timestamp: new Date(),
     }
   ])

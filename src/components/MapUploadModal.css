@@ -239,6 +239,9 @@
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(52, 178, 152, 0.3);
   pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .browse-btn:hover {

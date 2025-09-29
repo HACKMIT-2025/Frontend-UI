@@ -40,9 +40,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📱 File input change event triggered')
+    console.log('📱 Files:', e.target.files)
     e.preventDefault()
     if (e.target.files && e.target.files[0]) {
+      console.log('📱 File selected:', e.target.files[0].name)
       handleFile(e.target.files[0])
+    } else {
+      console.log('❌ No file selected')
     }
   }
 
@@ -64,7 +69,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleButtonClick = () => {
-    inputRef.current?.click()
+    console.log('📱 Mobile upload button clicked')
+    console.log('📱 Input ref:', inputRef.current)
+    if (inputRef.current) {
+      inputRef.current.click()
+      console.log('📱 Input click triggered')
+    } else {
+      console.log('❌ Input ref is null')
+    }
   }
 
   if (!isOpen) return null
@@ -171,7 +183,8 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   className="file-input"
                   multiple={false}
                   onChange={handleChange}
-                  accept="image/*"
+                  accept="image/*,image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  capture="environment"
                 />
 
                 <div className="drop-zone-content">
@@ -209,23 +222,6 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </div>
               </div>
 
-              <div className="instructions">
-                <h3 className="instructions-title">Drawing Guide:</h3>
-                <div className="instruction-items">
-                  <div className="instruction-item">
-                    <span className="shape triangle">▲</span>
-                    <span>Triangle = Start Point</span>
-                  </div>
-                  <div className="instruction-item">
-                    <span className="shape circle">●</span>
-                    <span>Circle = End Point</span>
-                  </div>
-                  <div className="instruction-item">
-                    <span className="shape rectangle">■</span>
-                    <span>Other Shapes = Platforms</span>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
