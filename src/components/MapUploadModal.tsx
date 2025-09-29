@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import './MapUploadModal.css'
 
 interface MapUploadModalProps {
@@ -17,6 +17,10 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Detect if device is mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -38,24 +42,25 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0])
+    }
+  }
+
+  const handleButtonClick = () => {
+    inputRef.current?.click()
+  }
 
   const handleFile = (file: File) => {
-    console.log('📱 handleFile called with:', file.name, file.type, file.size)
     if (file.type.startsWith('image/')) {
-      console.log('📱 File is valid image, processing...')
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
-        console.log('📱 File read completed, setting preview')
         setPreviewUrl(reader.result as string)
       }
-      reader.onerror = (error) => {
-        console.log('📱 File read error:', error)
-      }
       reader.readAsDataURL(file)
-    } else {
-      console.log('❌ File is not an image:', file.type)
-      alert('请选择图片文件')
     }
   }
 
@@ -164,6 +169,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  className="file-input"
+                  multiple={false}
+                  onChange={handleChange}
+                  accept="image/*"
+                />
 
                 <div className="drop-zone-content">
                   <div className="upload-animation">
@@ -195,71 +208,47 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   </p>
                   <span className="drop-or">or</span>
 
-                  {/* Simplified mobile-first file upload */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-
-                    {/* Method 1: Simple label + input */}
-                    <label
-                      htmlFor="simple-file-input"
-                      style={{
-                        backgroundColor: '#52b788',
-                        color: 'white',
-                        padding: '1rem 2rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        border: 'none',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        display: 'inline-block',
-                        textAlign: 'center',
-                        minWidth: '200px',
-                        WebkitTapHighlightColor: 'transparent',
-                        userSelect: 'none'
-                      }}
-                      onClick={() => console.log('📱 Label clicked')}
-                    >
-                      📷 选择图片
-                      <input
-                        id="simple-file-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          console.log('📱 Simple input change:', e.target.files)
-                          if (e.target.files && e.target.files[0]) {
-                            console.log('📱 File selected:', e.target.files[0].name)
-                            handleFile(e.target.files[0])
-                          }
-                        }}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-
-                    {/* Method 2: Visible file input */}
-                    <div style={{ textAlign: 'center' }}>
-                      <p style={{ color: '#888', fontSize: '14px', margin: '0.5rem 0' }}>或直接点击下方按钮：</p>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          console.log('📱 Visible input change:', e.target.files)
-                          if (e.target.files && e.target.files[0]) {
-                            console.log('📱 File selected via visible input:', e.target.files[0].name)
-                            handleFile(e.target.files[0])
-                          }
-                        }}
+                  {isMobile ? (
+                    /* Mobile-friendly upload options */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+                      <label
+                        htmlFor="mobile-file-input"
                         style={{
-                          padding: '0.5rem',
-                          backgroundColor: '#f0f0f0',
-                          border: '2px solid #52b788',
+                          backgroundColor: '#52b788',
+                          color: 'white',
+                          padding: '1rem 2rem',
                           borderRadius: '8px',
+                          cursor: 'pointer',
+                          border: 'none',
                           fontSize: '16px',
-                          width: '100%',
-                          maxWidth: '300px'
+                          fontWeight: 'bold',
+                          display: 'inline-block',
+                          textAlign: 'center',
+                          minWidth: '200px',
+                          WebkitTapHighlightColor: 'transparent',
+                          userSelect: 'none'
                         }}
-                      />
+                      >
+                        📷 选择图片
+                        <input
+                          id="mobile-file-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleFile(e.target.files[0])
+                            }
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
                     </div>
-
-                  </div>
+                  ) : (
+                    /* Desktop beautiful Browse Files button */
+                    <button className="browse-btn" onClick={handleButtonClick}>
+                      Browse Files
+                    </button>
+                  )}
                 </div>
               </div>
 
