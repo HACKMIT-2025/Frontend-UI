@@ -36,6 +36,19 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isTyping }) => {
               </div>
             )}
             <div className="message-text">{message.content}</div>
+            {message.buttons && (
+              <div className="message-buttons">
+                {message.buttons.map((button) => (
+                  <button
+                    key={button.id}
+                    className="message-button"
+                    onClick={button.action}
+                  >
+                    {button.text}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ))}

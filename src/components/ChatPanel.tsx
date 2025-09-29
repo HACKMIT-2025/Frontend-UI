@@ -13,6 +13,7 @@ export interface Message {
   content: string
   timestamp: Date
   image?: string
+  buttons?: { id: string; text: string; action: () => void }[]
 }
 
 interface ChatPanelProps {
@@ -33,6 +34,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   const [isProcessingMap, setIsProcessingMap] = useState(false)
   const [showAILoader, setShowAILoader] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState('')
+  const [waitingForPublicName, setWaitingForPublicName] = useState(false)
+  const [currentLevelId, setCurrentLevelId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -44,6 +47,22 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   }, [messages])
 
   const handleSendMessage = async (content: string, image?: File) => {
+    // Handle special cases first
+    if (waitingForPublicName && content.trim()) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMessage])
+
+      // Handle public name submission
+      setWaitingForPublicName(false)
+      await handlePublicSharingResponse(true, content.trim())
+      return
+    }
+
     let imageBase64: string | undefined = undefined
 
     // Convert image to base64 if provided
@@ -167,6 +186,99 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     }
   }
 
+  const handlePublicSharingResponse = async (wantsToShare: boolean, publicName?: string) => {
+    if (!currentLevelId) return
+
+
+    if (wantsToShare) {
+      // Ask for public name
+      if (!publicName) {
+        setWaitingForPublicName(true)
+        const namePromptMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `🌟 **Great! Let's make your map public!**\n\nPlease enter a name for your public map:\n\n(This name will be visible to other players in the community)`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, namePromptMessage])
+        return
+      }
+
+      // Submit the public sharing request
+      try {
+        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/mario/level/${currentLevelId}/set-public`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_public: true,
+            public_name: publicName
+          })
+        })
+
+        if (response.ok) {
+          const successMessage: Message = {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `🎉 **Map Shared Successfully!**\n\nYour map "${publicName}" is now public and visible in the community!\n\n🌍 Other players can now discover and play your level.\n\n✨ You can change this setting anytime from your map settings.`,
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, successMessage])
+        } else {
+          throw new Error('Failed to make map public')
+        }
+      } catch (error) {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `❌ **Failed to share map publicly**\n\nThere was an error making your map public. You can try again later.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } else {
+      // User chose to keep it private
+      const privateMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `🔒 **Map Kept Private**\n\nYour map will remain private and only accessible to you.\n\n💡 **Tip:** You can always make it public later from your map settings!`,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, privateMessage])
+    }
+
+    // Continue with the share links
+    const result = (window as any).mapProcessingResult
+    if (result?.level_id) {
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
+
+      setTimeout(() => {
+        copyToClipboard(correctGameUrl, 'Game Share')
+      }, 1000)
+
+      setTimeout(() => {
+        const shareMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          type: 'ai',
+          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the button below to copy the link again:\n\n**🎮 [Click to copy share link](${correctGameUrl})**`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, shareMessage])
+      }, 2000)
+
+      setTimeout(() => {
+        const followUpMessage: Message = {
+          id: (Date.now() + 3).toString(),
+          type: 'ai',
+          content: '🎮 **Your new map is now active in the game on the left!**\n\nNow you can:\n• Use arrow keys and spacebar to play your custom level\n• Ask me to modify any part of the map\n• Upload new hand-drawn maps anytime\n\nThe game now displays your uploaded hand-drawn map, not the default level. Give it a try!',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, followUpMessage])
+      }, 3000)
+    }
+  }
+
   const handleAILoaderComplete = () => {
     const result = (window as any).mapProcessingResult
 
@@ -214,37 +326,36 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\n🎮 **Share Your Level:**\n• [🎮 Play Game](${correctGameUrl}) - Share this link with friends!\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
 
-      // Automatically copy the game URL and show share options
-      setTimeout(() => {
-        copyToClipboard(correctGameUrl, 'Game Share')
-      }, 1000)
+      // Store the current level ID and ask about public sharing
+      setCurrentLevelId(result.level_id)
 
-      // Add follow-up message with copy buttons
+      // Ask about public sharing
       setTimeout(() => {
-        const shareMessage: Message = {
+        const publicSharingMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: `🔗 **Share Your Level!**\n\nThe game link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the button below to copy the link again:\n\n**🎮 [Click to copy share link](${correctGameUrl})**`,
-          timestamp: new Date()
+          content: `🌟 **Share with the Community?**\n\nWould you like to share your map publicly with the community?\n\nYou can always change this setting later.`,
+          timestamp: new Date(),
+          buttons: [
+            {
+              id: 'share-public',
+              text: '🌍 Share Publicly',
+              action: () => handlePublicSharingResponse(true)
+            },
+            {
+              id: 'keep-private',
+              text: '🔒 Keep Private',
+              action: () => handlePublicSharingResponse(false)
+            }
+          ]
         }
-        setMessages(prev => [...prev, shareMessage])
-      }, 2000)
-
-      // Add gameplay instructions
-      setTimeout(() => {
-        const followUpMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          type: 'ai',
-          content: '🎮 **Your new map is now active in the game on the left!**\n\nNow you can:\n• Use arrow keys and spacebar to play your custom level\n• Ask me to modify any part of the map\n• Upload new hand-drawn maps anytime\n\nThe game now displays your uploaded hand-drawn map, not the default level. Give it a try!',
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, followUpMessage])
-      }, 3000)
+        setMessages(prev => [...prev, publicSharingMessage])
+      }, 1000)
     } else {
       // Add detailed error message
       let errorAdvice = '';

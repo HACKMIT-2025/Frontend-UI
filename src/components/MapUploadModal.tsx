@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import './MapUploadModal.css'
 
 interface MapUploadModalProps {
@@ -17,7 +17,6 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -39,26 +38,24 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('📱 File input change event triggered')
-    console.log('📱 Files:', e.target.files)
-    e.preventDefault()
-    if (e.target.files && e.target.files[0]) {
-      console.log('📱 File selected:', e.target.files[0].name)
-      handleFile(e.target.files[0])
-    } else {
-      console.log('❌ No file selected')
-    }
-  }
 
   const handleFile = (file: File) => {
+    console.log('📱 handleFile called with:', file.name, file.type, file.size)
     if (file.type.startsWith('image/')) {
+      console.log('📱 File is valid image, processing...')
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
+        console.log('📱 File read completed, setting preview')
         setPreviewUrl(reader.result as string)
       }
+      reader.onerror = (error) => {
+        console.log('📱 File read error:', error)
+      }
       reader.readAsDataURL(file)
+    } else {
+      console.log('❌ File is not an image:', file.type)
+      alert('请选择图片文件')
     }
   }
 
@@ -68,34 +65,6 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     }
   }
 
-  const handleButtonClick = () => {
-    console.log('📱 Browse Files button clicked')
-    console.log('📱 Input ref:', inputRef.current)
-    if (inputRef.current) {
-      // For mobile compatibility, try different approaches
-      try {
-        // Method 1: Direct click
-        inputRef.current.click()
-        console.log('📱 Direct click triggered')
-      } catch (error) {
-        console.log('📱 Direct click failed:', error)
-        try {
-          // Method 2: Create and dispatch click event
-          const event = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-          })
-          inputRef.current.dispatchEvent(event)
-          console.log('📱 Dispatch event triggered')
-        } catch (error2) {
-          console.log('📱 Dispatch event failed:', error2)
-        }
-      }
-    } else {
-      console.log('❌ Input ref is null')
-    }
-  }
 
   if (!isOpen) return null
 
@@ -195,21 +164,6 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                <input
-                  ref={inputRef}
-                  type="file"
-                  className="file-input"
-                  multiple={false}
-                  onChange={handleChange}
-                  accept="image/*"
-                  capture="user"
-                  style={{
-                    position: 'absolute',
-                    left: '-9999px',
-                    opacity: 0,
-                    pointerEvents: 'none'
-                  }}
-                />
 
                 <div className="drop-zone-content">
                   <div className="upload-animation">
@@ -241,48 +195,71 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   </p>
                   <span className="drop-or">or</span>
 
-                  {/* Primary button for triggering file input */}
-                  <button
-                    className="browse-btn"
-                    onClick={handleButtonClick}
-                    onTouchStart={(e) => {
-                      console.log('📱 Browse button touch start')
-                      e.preventDefault()
-                    }}
-                    onTouchEnd={(e) => {
-                      console.log('📱 Browse button touch end')
-                      e.preventDefault()
-                      handleButtonClick()
-                    }}
-                    style={{
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation'
-                    }}
-                  >
-                    Browse Files
-                  </button>
+                  {/* Simplified mobile-first file upload */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
 
-                  {/* Mobile fallback: Direct label approach */}
-                  <label
-                    htmlFor="mobile-file-input"
-                    className="browse-btn"
-                    style={{
-                      marginTop: '1rem',
-                      display: 'inline-block',
-                      backgroundColor: '#4CAF50',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    📱 Mobile Upload
-                    <input
-                      id="mobile-file-input"
-                      type="file"
-                      accept="image/*"
-                      capture="user"
-                      onChange={handleChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
+                    {/* Method 1: Simple label + input */}
+                    <label
+                      htmlFor="simple-file-input"
+                      style={{
+                        backgroundColor: '#52b788',
+                        color: 'white',
+                        padding: '1rem 2rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        border: 'none',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        display: 'inline-block',
+                        textAlign: 'center',
+                        minWidth: '200px',
+                        WebkitTapHighlightColor: 'transparent',
+                        userSelect: 'none'
+                      }}
+                      onClick={() => console.log('📱 Label clicked')}
+                    >
+                      📷 选择图片
+                      <input
+                        id="simple-file-input"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          console.log('📱 Simple input change:', e.target.files)
+                          if (e.target.files && e.target.files[0]) {
+                            console.log('📱 File selected:', e.target.files[0].name)
+                            handleFile(e.target.files[0])
+                          }
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+
+                    {/* Method 2: Visible file input */}
+                    <div style={{ textAlign: 'center' }}>
+                      <p style={{ color: '#888', fontSize: '14px', margin: '0.5rem 0' }}>或直接点击下方按钮：</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          console.log('📱 Visible input change:', e.target.files)
+                          if (e.target.files && e.target.files[0]) {
+                            console.log('📱 File selected via visible input:', e.target.files[0].name)
+                            handleFile(e.target.files[0])
+                          }
+                        }}
+                        style={{
+                          padding: '0.5rem',
+                          backgroundColor: '#f0f0f0',
+                          border: '2px solid #52b788',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          width: '100%',
+                          maxWidth: '300px'
+                        }}
+                      />
+                    </div>
+
+                  </div>
                 </div>
               </div>
 
