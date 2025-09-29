@@ -69,11 +69,29 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleButtonClick = () => {
-    console.log('📱 Mobile upload button clicked')
+    console.log('📱 Browse Files button clicked')
     console.log('📱 Input ref:', inputRef.current)
     if (inputRef.current) {
-      inputRef.current.click()
-      console.log('📱 Input click triggered')
+      // For mobile compatibility, try different approaches
+      try {
+        // Method 1: Direct click
+        inputRef.current.click()
+        console.log('📱 Direct click triggered')
+      } catch (error) {
+        console.log('📱 Direct click failed:', error)
+        try {
+          // Method 2: Create and dispatch click event
+          const event = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+          })
+          inputRef.current.dispatchEvent(event)
+          console.log('📱 Dispatch event triggered')
+        } catch (error2) {
+          console.log('📱 Dispatch event failed:', error2)
+        }
+      }
     } else {
       console.log('❌ Input ref is null')
     }
@@ -183,8 +201,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   className="file-input"
                   multiple={false}
                   onChange={handleChange}
-                  accept="image/*,image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                  capture="environment"
+                  accept="image/*"
+                  capture="user"
+                  style={{
+                    position: 'absolute',
+                    left: '-9999px',
+                    opacity: 0,
+                    pointerEvents: 'none'
+                  }}
                 />
 
                 <div className="drop-zone-content">
@@ -216,9 +240,49 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                     Drag & drop your map image here
                   </p>
                   <span className="drop-or">or</span>
-                  <button className="browse-btn" onClick={handleButtonClick}>
+
+                  {/* Primary button for triggering file input */}
+                  <button
+                    className="browse-btn"
+                    onClick={handleButtonClick}
+                    onTouchStart={(e) => {
+                      console.log('📱 Browse button touch start')
+                      e.preventDefault()
+                    }}
+                    onTouchEnd={(e) => {
+                      console.log('📱 Browse button touch end')
+                      e.preventDefault()
+                      handleButtonClick()
+                    }}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      touchAction: 'manipulation'
+                    }}
+                  >
                     Browse Files
                   </button>
+
+                  {/* Mobile fallback: Direct label approach */}
+                  <label
+                    htmlFor="mobile-file-input"
+                    className="browse-btn"
+                    style={{
+                      marginTop: '1rem',
+                      display: 'inline-block',
+                      backgroundColor: '#4CAF50',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    📱 Mobile Upload
+                    <input
+                      id="mobile-file-input"
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      onChange={handleChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
                 </div>
               </div>
 
