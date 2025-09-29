@@ -17,6 +17,13 @@ const MobileLayout: React.FC = () => {
   const [gameLoaded, setGameLoaded] = useState(false)
   const gamePanelRef = useRef<any>(null)
 
+  // Debug info
+  console.log('📱 MobileLayout rendered')
+  console.log('📱 showUploadModal:', showUploadModal)
+  console.log('📱 gameLoaded:', gameLoaded)
+  console.log('📱 User agent:', navigator.userAgent)
+  console.log('📱 Screen width:', window.innerWidth)
+
   const handleMapUpload = async (file: File) => {
     setUploadedFileName(file.name)
     setShowUploadModal(false)
@@ -89,13 +96,56 @@ const MobileLayout: React.FC = () => {
           </div>
 
 
-          <button
-            className="upload-button"
-            onClick={() => setShowUploadModal(true)}
-          >
-            <span className="upload-icon">📤</span>
-            <span>上传地图照片</span>
-          </button>
+          <div style={{ margin: '1rem 0' }}>
+            <button
+              className="upload-button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('📱 Mobile upload button clicked!')
+                console.log('📱 Event:', e)
+                setShowUploadModal(true)
+              }}
+              onTouchStart={(e) => {
+                console.log('📱 Touch start on upload button')
+                console.log('📱 Touch event:', e)
+              }}
+              onTouchEnd={(e) => {
+                console.log('📱 Touch end on upload button')
+                console.log('📱 Touch event:', e)
+              }}
+              style={{
+                minHeight: '60px',
+                minWidth: '200px',
+                fontSize: '18px',
+                zIndex: 9999,
+                position: 'relative'
+              }}
+            >
+              <span className="upload-icon">📤</span>
+              <span>上传地图照片</span>
+            </button>
+
+            {/* Test button */}
+            <button
+              onClick={() => {
+                console.log('📱 Test button clicked!')
+                alert('Test button works!')
+              }}
+              style={{
+                backgroundColor: 'red',
+                color: 'white',
+                padding: '1rem',
+                border: 'none',
+                borderRadius: '8px',
+                marginTop: '1rem',
+                display: 'block',
+                zIndex: 9999
+              }}
+            >
+              测试按钮
+            </button>
+          </div>
         </div>
       ) : (
         // Fullscreen game view

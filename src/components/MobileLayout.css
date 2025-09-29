@@ -93,6 +93,9 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   user-select: none;
+  z-index: 1000;
+  position: relative;
+  pointer-events: auto;
 }
 
 .upload-button:hover {
