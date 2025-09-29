@@ -187,7 +187,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   }
 
   const handlePublicSharingResponse = async (wantsToShare: boolean, publicName?: string) => {
-    if (!currentLevelId) return
+    console.log('🎯 handlePublicSharingResponse called with:', { wantsToShare, publicName, currentLevelId })
+    if (!currentLevelId) {
+      console.log('❌ No currentLevelId, returning')
+      return
+    }
 
 
     if (wantsToShare) {
@@ -345,12 +349,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
             {
               id: 'share-public',
               text: '🌍 Share Publicly',
-              action: () => handlePublicSharingResponse(true)
+              action: () => {
+                console.log('🔵 Share Publicly button clicked')
+                handlePublicSharingResponse(true)
+              }
             },
             {
               id: 'keep-private',
               text: '🔒 Keep Private',
-              action: () => handlePublicSharingResponse(false)
+              action: () => {
+                console.log('🔴 Keep Private button clicked')
+                handlePublicSharingResponse(false)
+              }
             }
           ]
         }

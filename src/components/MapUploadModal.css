@@ -183,6 +183,48 @@
   pointer-events: auto;
 }
 
+/* Upload button section - separate from drag zone */
+.upload-button-section {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.upload-or {
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* Mobile upload button styling */
+.mobile-upload-btn {
+  background: linear-gradient(135deg, var(--color-accent-green), var(--color-accent-blue));
+  border: none;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(52, 178, 152, 0.3);
+  display: inline-block;
+  text-decoration: none;
+  min-width: 200px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mobile-upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(52, 178, 152, 0.5);
+}
+
 .upload-animation {
   width: 80px;
   height: 80px;
@@ -229,12 +271,6 @@
   font-weight: 500;
 }
 
-.drop-or {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-  display: block;
-  margin: 1rem 0;
-}
 
 .browse-btn {
   background: linear-gradient(135deg, var(--color-accent-green), var(--color-accent-blue));

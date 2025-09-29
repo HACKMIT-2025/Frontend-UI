@@ -42,7 +42,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isTyping }) => {
                   <button
                     key={button.id}
                     className="message-button"
-                    onClick={button.action}
+                    onClick={(e) => {
+                      console.log('🎯 Button clicked:', button.id, button.text)
+                      e.preventDefault()
+                      e.stopPropagation()
+                      if (button.action) {
+                        console.log('🎯 Calling button action')
+                        button.action()
+                      } else {
+                        console.log('❌ No button action defined')
+                      }
+                    }}
                   >
                     {button.text}
                   </button>

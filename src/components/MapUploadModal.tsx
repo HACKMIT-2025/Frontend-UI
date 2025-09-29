@@ -162,6 +162,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </p>
               </div>
 
+              {/* Drag and drop zone */}
               <div
                 className={`drop-zone ${dragActive ? 'drag-active' : ''}`}
                 onDragEnter={handleDrag}
@@ -206,50 +207,37 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   <p className="drop-text">
                     Drag & drop your map image here
                   </p>
-                  <span className="drop-or">or</span>
-
-                  {isMobile ? (
-                    /* Mobile-friendly upload options */
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-                      <label
-                        htmlFor="mobile-file-input"
-                        style={{
-                          backgroundColor: '#52b788',
-                          color: 'white',
-                          padding: '1rem 2rem',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          border: 'none',
-                          fontSize: '16px',
-                          fontWeight: 'bold',
-                          display: 'inline-block',
-                          textAlign: 'center',
-                          minWidth: '200px',
-                          WebkitTapHighlightColor: 'transparent',
-                          userSelect: 'none'
-                        }}
-                      >
-                        📷 选择图片
-                        <input
-                          id="mobile-file-input"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              handleFile(e.target.files[0])
-                            }
-                          }}
-                          style={{ display: 'none' }}
-                        />
-                      </label>
-                    </div>
-                  ) : (
-                    /* Desktop beautiful Browse Files button */
-                    <button className="browse-btn" onClick={handleButtonClick}>
-                      Browse Files
-                    </button>
-                  )}
                 </div>
+              </div>
+
+              {/* Upload button section - separate from drag zone */}
+              <div className="upload-button-section">
+                <span className="upload-or">or</span>
+                {isMobile ? (
+                  /* Mobile-friendly upload options */
+                  <label
+                    htmlFor="mobile-file-input"
+                    className="mobile-upload-btn"
+                  >
+                    📷 选择图片
+                    <input
+                      id="mobile-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleFile(e.target.files[0])
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                ) : (
+                  /* Desktop beautiful Browse Files button */
+                  <button className="browse-btn" onClick={handleButtonClick}>
+                    Browse Files
+                  </button>
+                )}
               </div>
 
             </>
