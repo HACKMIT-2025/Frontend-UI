@@ -23,16 +23,19 @@ const MobileLayout: React.FC = () => {
     setShowAILoader(true)
 
     try {
+      // Start processing and store result when done
       const result = await mapProcessing.processMap(file, (step: string, message: string) => {
         console.log(`Processing step: ${step} - ${message}`)
       })
 
       // Store result for when AI loader completes
       ;(window as any).mapProcessingResult = result
+      ;(window as any).processingComplete = true
     } catch (error) {
       console.error('Map processing failed:', error)
-      setShowAILoader(false)
-      setShowUploadModal(true)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      ;(window as any).mapProcessingResult = { success: false, error: errorMessage }
+      ;(window as any).processingComplete = true
     }
   }
 
@@ -147,6 +150,7 @@ const MobileLayout: React.FC = () => {
         isVisible={showAILoader}
         onComplete={handleAILoaderComplete}
         uploadedFileName={uploadedFileName}
+        autoComplete={false}
       />
     </div>
   )

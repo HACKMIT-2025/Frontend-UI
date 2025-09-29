@@ -128,17 +128,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     }
     setMessages(prev => [...prev, userMessage])
 
-    // Start both: AI loader animation AND actual processing
-    const [result] = await Promise.all([
-      mapProcessing.processMap(file, (step: string, message: string) => {
+    try {
+      // Start processing and store result when done
+      const result = await mapProcessing.processMap(file, (step: string, message: string) => {
         console.log(`Processing step: ${step} - ${message}`)
-      }),
-      // Just wait for AI loader to complete (3-5s)
-      new Promise(resolve => setTimeout(resolve, 1)) // Immediate resolve, let AI loader control timing
-    ])
+      })
 
-    // Store result for when AI loader completes
-    ;(window as any).mapProcessingResult = result
+      // Store result for when AI loader completes
+      ;(window as any).mapProcessingResult = result
+      ;(window as any).processingComplete = true
+    } catch (error) {
+      console.error('Map processing failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      ;(window as any).mapProcessingResult = { success: false, error: errorMessage }
+      ;(window as any).processingComplete = true
+    }
   }
 
   const copyToClipboard = async (text: string, type: string) => {
@@ -319,6 +323,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         isVisible={showAILoader}
         onComplete={handleAILoaderComplete}
         uploadedFileName={uploadedFileName}
+        autoComplete={false}
       />
     </div>
   )

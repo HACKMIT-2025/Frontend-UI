@@ -5,12 +5,14 @@ interface AICodeGeneratorLoaderProps {
   isVisible: boolean
   onComplete: () => void
   uploadedFileName?: string
+  autoComplete?: boolean
 }
 
 const AICodeGeneratorLoader: React.FC<AICodeGeneratorLoaderProps> = ({
   isVisible,
   onComplete,
-  uploadedFileName = "map_sketch.jpg"
+  uploadedFileName = "map_sketch.jpg",
+  autoComplete = true
 }) => {
   const [currentStep, setCurrentStep] = useState(0)
   const [currentCode, setCurrentCode] = useState('')
@@ -138,14 +140,31 @@ const AICodeGeneratorLoader: React.FC<AICodeGeneratorLoaderProps> = ({
     }
     showNextCode()
 
-    // Complete after duration
-    stepTimer = setTimeout(() => {
-      setProgress(100)
-      setCurrentStep(steps.length - 1)
-      setTimeout(() => {
-        onComplete()
-      }, 300)
-    }, totalDuration)
+    // Complete after duration (only if autoComplete is true)
+    if (autoComplete) {
+      stepTimer = setTimeout(() => {
+        setProgress(100)
+        setCurrentStep(steps.length - 1)
+        setTimeout(() => {
+          onComplete()
+        }, 300)
+      }, totalDuration)
+    } else {
+      // If not auto-complete, check for processing completion every 500ms
+      const checkCompletion = () => {
+        if ((window as any).processingComplete) {
+          setProgress(100)
+          setCurrentStep(steps.length - 1)
+          setTimeout(() => {
+            onComplete()
+            ;(window as any).processingComplete = false // Reset flag
+          }, 300)
+        } else {
+          setTimeout(checkCompletion, 500)
+        }
+      }
+      setTimeout(checkCompletion, 500) // Start checking after 500ms
+    }
 
     return () => {
       clearTimeout(stepTimer)
@@ -153,7 +172,7 @@ const AICodeGeneratorLoader: React.FC<AICodeGeneratorLoaderProps> = ({
       clearTimeout(codeTimer)
       clearTimeout(timeTimer)
     }
-  }, [isVisible, onComplete])
+  }, [isVisible, onComplete, autoComplete])
 
   if (!isVisible) return null
 
