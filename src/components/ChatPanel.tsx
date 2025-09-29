@@ -27,16 +27,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       type: 'ai',
       content: '🎮 Welcome to Mario Map Creator!\n\nI\'m your AI assistant, and I\'ll help you bring your hand-drawn Mario levels to life!\n\n**Let\'s get started:**\nUpload a photo of your hand-drawn map!\n\nClick the button below to upload your map! 👇',
       timestamp: new Date(),
-      buttons: [
-        {
-          id: 'test-initial',
-          text: '🧪 Test Initial Button',
-          action: () => {
-            console.log('🧪 Initial test button clicked!')
-            alert('Initial test button works!')
-          }
-        }
-      ]
     }
   ])
   const [isTyping, setIsTyping] = useState(false)
@@ -196,14 +186,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     }
   }
 
+  const reloadGameWithCurrentLevel = () => {
+    console.log('🔄 Reloading game with current level:', currentLevelId)
+    if (currentLevelId && onLevelGenerated) {
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${currentLevelId}`;
+      onLevelGenerated({
+        levelId: currentLevelId,
+        jsonUrl: correctEmbedUrl,
+        embedUrl: correctEmbedUrl
+      })
+      console.log('✅ Game reloaded with level ID:', currentLevelId)
+    }
+  }
+
   const handlePublicSharingResponse = async (wantsToShare: boolean, publicName?: string) => {
     console.log('🎯 handlePublicSharingResponse called with:', { wantsToShare, publicName, currentLevelId })
+    console.log('🎯 Window mapProcessingResult:', (window as any).mapProcessingResult)
 
     // Try to get level ID from multiple sources
-    const result = (window as any).mapProcessingResult
-    const levelId = currentLevelId || result?.level_id
+    const mapResult = (window as any).mapProcessingResult
+    const levelId = currentLevelId || mapResult?.level_id
 
-    console.log('🔍 Level ID sources:', { currentLevelId, resultLevelId: result?.level_id, finalLevelId: levelId })
+    console.log('🔍 Level ID sources:', { currentLevelId, resultLevelId: mapResult?.level_id, finalLevelId: levelId })
 
     if (!levelId) {
       console.log('❌ No level ID found, showing error message to user')
@@ -249,7 +253,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
 
       // Submit the public sharing request
       try {
-        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/mario/level/${currentLevelId}/set-public`, {
+        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/mario/level/${levelId}/set-public`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -268,6 +272,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
             timestamp: new Date()
           }
           setMessages(prev => [...prev, successMessage])
+
+          // Reload the game with updated map
+          setTimeout(() => {
+            reloadGameWithCurrentLevel()
+          }, 1000)
         } else {
           throw new Error('Failed to make map public')
         }
@@ -289,12 +298,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         timestamp: new Date()
       }
       setMessages(prev => [...prev, privateMessage])
+
+      // Reload the game with current level
+      setTimeout(() => {
+        reloadGameWithCurrentLevel()
+      }, 1000)
     }
 
     // Continue with the share links
-    const result = (window as any).mapProcessingResult
-    if (result?.level_id) {
-      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
+    const shareResult = (window as any).mapProcessingResult
+    if (shareResult?.level_id) {
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${shareResult.level_id}`;
 
       setTimeout(() => {
         copyToClipboard(correctGameUrl, 'Game Share')
@@ -323,35 +337,35 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   }
 
   const handleAILoaderComplete = () => {
-    const result = (window as any).mapProcessingResult
+    const loaderResult = (window as any).mapProcessingResult
 
     setShowAILoader(false)
     setIsProcessingMap(false)
     setShowMapUpload(false)
 
-    console.log('🔍 HandleAILoaderComplete - result:', result)
-    console.log('🔍 result?.success:', result?.success)
-    console.log('🔍 result.level_id:', result.level_id)
-    console.log('🔍 Condition check:', result?.success && result.level_id)
+    console.log('🔍 HandleAILoaderComplete - result:', loaderResult)
+    console.log('🔍 result?.success:', loaderResult?.success)
+    console.log('🔍 result.level_id:', loaderResult.level_id)
+    console.log('🔍 Condition check:', loaderResult?.success && loaderResult.level_id)
 
-    if (result?.success && result.level_id) {
+    if (loaderResult?.success && loaderResult.level_id) {
       // Generate URLs using ID mode
-      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${result.level_id}`;
-      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+      const correctGameUrl = `https://frontend-mario.vercel.app/play?id=${loaderResult.level_id}`;
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${loaderResult.level_id}`;
 
-      console.log('🆔 API returned level_id:', result.level_id)
+      console.log('🆔 API returned level_id:', loaderResult.level_id)
       console.log('🔧 Game URL (ID mode):', correctGameUrl)
       console.log('🔧 Embed URL (ID mode):', correctEmbedUrl)
 
       // Pass the level ID for direct ID-based game loading
       if (onLevelGenerated) {
         console.log('🎮 Calling onLevelGenerated with:', {
-          levelId: result.level_id,
+          levelId: loaderResult.level_id,
           jsonUrl: correctEmbedUrl,
           embedUrl: correctEmbedUrl
         })
         onLevelGenerated({
-          levelId: result.level_id,
+          levelId: loaderResult.level_id,
           jsonUrl: correctEmbedUrl,
           embedUrl: correctEmbedUrl
         })
@@ -361,25 +375,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
 
       // Add success message with shape detection details and share buttons
       let shapeDetails = '';
-      if (result.levelData?.level_data) {
-        const data = result.levelData.level_data;
+      if (loaderResult.levelData?.level_data) {
+        const data = loaderResult.levelData.level_data;
         shapeDetails = `\n🔍 **Shape Detection Results:**\n• ⬡ **Hexagons (Start Points):** ${data.starting_points?.length || 0} detected\n• ✕ **Crosses (End Points):** ${data.end_points?.length || 0} detected\n• ▲ **Triangles (Spikes):** ${data.spikes?.length || 0} detected\n• ● **Circles (Coins):** ${data.coins?.length || 0} detected\n• ■ **Other Shapes (Platforms):** ${data.rigid_bodies?.length || 0} detected\n• 📐 **Image Size:** ${data.image_size?.[0] || 0}x${data.image_size?.[1] || 0} pixels\n`;
       }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${result.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\nYou can now play your custom level in the game window on the left!`,
+        content: `✅ **New Map Created Successfully!** \nLevel ID: \`${loaderResult.level_id}\`${shapeDetails}\n\n🎯 **Your hand-drawn map has been loaded into the game on the left!**\n\nYou can now play your custom level in the game window on the left!`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, aiMessage])
 
       // Store the current level ID and ask about public sharing
-      console.log('🔍 Setting currentLevelId to:', result.level_id)
-      setCurrentLevelId(result.level_id)
+      console.log('🔍 Setting currentLevelId to:', loaderResult.level_id)
+      setCurrentLevelId(loaderResult.level_id)
 
       // Ask about public sharing
+      console.log('🎯 About to create share buttons with levelId:', loaderResult.level_id)
+      console.log('🎯 Setting currentLevelId to:', loaderResult.level_id)
       setTimeout(() => {
+        console.log('🎯 Creating public sharing message with buttons')
         const publicSharingMessage: Message = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
@@ -387,18 +404,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
           timestamp: new Date(),
           buttons: [
             {
-              id: 'test-button',
-              text: '🧪 Test Button',
-              action: () => {
-                console.log('🧪 Test button clicked!')
-                alert('Test button works!')
-              }
-            },
-            {
               id: 'share-public',
               text: '🌍 Share Publicly',
               action: () => {
                 console.log('🔵 Share Publicly button clicked')
+                console.log('🔵 Current level ID:', currentLevelId)
                 handlePublicSharingResponse(true)
               }
             },
@@ -407,28 +417,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
               text: '🔒 Keep Private',
               action: () => {
                 console.log('🔴 Keep Private button clicked')
+                console.log('🔴 Current level ID:', currentLevelId)
                 handlePublicSharingResponse(false)
               }
             }
           ]
         }
+        console.log('🎯 Adding public sharing message to chat')
         setMessages(prev => [...prev, publicSharingMessage])
       }, 1000)
     } else {
       // Add detailed error message
       let errorAdvice = '';
-      if (result.error?.includes('timeout')) {
+      if (loaderResult.error?.includes('timeout')) {
         errorAdvice = '\n\n💡 **Suggestion:** Your image might be too large or complex. Try:\n• Using a smaller image (under 5MB)\n• Simplifying your drawing\n• Ensuring good lighting and contrast';
-      } else if (result.error?.includes('not accessible')) {
+      } else if (loaderResult.error?.includes('not accessible')) {
         errorAdvice = '\n\n💡 **Suggestion:** The level was created but the data couldn\'t be validated. Please try uploading again.';
-      } else if (result.error?.includes('failed')) {
+      } else if (loaderResult.error?.includes('failed')) {
         errorAdvice = '\n\n💡 **Suggestion:** Make sure your drawing has:\n• Clear, dark lines\n• A triangle (▲) for the start\n• A circle (●) for the end\n• Rectangles/shapes for platforms';
       }
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: `❌ **Processing Failed**\n\n${result?.error || 'Unknown error occurred'}${errorAdvice}`,
+        content: `❌ **Processing Failed**\n\n${loaderResult?.error || 'Unknown error occurred'}${errorAdvice}`,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
