@@ -100,7 +100,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </div>
               </div>
               <h2 className="processing-title">Analyzing Your Map</h2>
-              <p className="processing-subtitle">Detecting shapes and boundaries...</p>
+              <p className="processing-subtitle">OpenCV detecting shapes and boundaries...</p>
               <div className="processing-steps">
                 <div className="step active">
                   <span className="step-icon">🔍</span>
@@ -108,7 +108,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </div>
                 <div className="step">
                   <span className="step-icon">📐</span>
-                  <span>Detecting shapes</span>
+                  <span>Detecting shapes (⬡✕▲●)</span>
                 </div>
                 <div className="step">
                   <span className="step-icon">🎮</span>
@@ -160,6 +160,9 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 <p className="modal-subtitle">
                   Draw your Mario level on paper and upload it here!
                 </p>
+                <div className="shape-hints">
+                  <small>⬡ Hexagon=Start | ✕ Cross=End | ▲ Triangle=Spike | ● Circle=Coin | ■ Other=Platform</small>
+                </div>
               </div>
 
               {/* Drag and drop zone */}
@@ -219,7 +222,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                     htmlFor="mobile-file-input"
                     className="mobile-upload-btn"
                   >
-                    📷 选择图片
+                    📷 Choose Image
                     <input
                       id="mobile-file-input"
                       type="file"

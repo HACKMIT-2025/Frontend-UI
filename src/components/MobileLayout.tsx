@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import GamePanel from './GamePanel'
 import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
@@ -57,7 +57,7 @@ const MobileLayout: React.FC = () => {
 
     if (result?.success && result.level_id) {
       // Generate URLs using ID mode (same as ChatPanel.tsx)
-        const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}`;
+      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}&mobile=true`;
 
       const levelData = {
         jsonUrl: correctEmbedUrl,
@@ -65,16 +65,29 @@ const MobileLayout: React.FC = () => {
         levelId: result.level_id
       }
 
+      console.log('📱 Setting level data:', levelData)
+      console.log('📱 About to set gameLoaded to true')
+
       setCurrentLevelData(levelData)
       setGameLoaded(true)
 
-      // Load level in game panel
-      if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
-        gamePanelRef.current.loadNewLevel(levelData.levelId)
-      }
+      console.log('📱 gameLoaded set to true')
+      console.log('📱 currentLevelData:', levelData)
+
+      // Load level in game panel after state updates
+      setTimeout(() => {
+        console.log('📱 Calling loadNewLevel on gamePanelRef')
+        if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
+          gamePanelRef.current.loadNewLevel(levelData.levelId)
+          console.log('📱 loadNewLevel called successfully')
+        } else {
+          console.warn('📱 gamePanelRef.current or loadNewLevel not available')
+        }
+      }, 100)
     } else {
       // Show error and go back to upload
-      alert('上传处理失败，请重试')
+      console.error('📱 Upload processing failed:', result)
+      alert('Upload processing failed, please try again')
       setShowUploadModal(true)
     }
   }
@@ -85,6 +98,12 @@ const MobileLayout: React.FC = () => {
     setShowUploadModal(true)
   }
 
+  // Debug gameLoaded state changes
+  useEffect(() => {
+    console.log('📱 gameLoaded changed to:', gameLoaded)
+    console.log('📱 currentLevelData:', currentLevelData)
+  }, [gameLoaded, currentLevelData])
+
   return (
     <div className="mobile-layout">
       {!gameLoaded ? (
@@ -92,7 +111,7 @@ const MobileLayout: React.FC = () => {
         <div className="upload-screen">
           <div className="upload-header">
             <h1>🎮 Mario Map Creator</h1>
-            <p>上传你的手绘马里奥地图</p>
+            <p>Upload your hand-drawn Mario map</p>
           </div>
 
 
@@ -123,7 +142,7 @@ const MobileLayout: React.FC = () => {
               }}
             >
               <span className="upload-icon">📤</span>
-              <span>上传地图照片</span>
+              <span>Upload Map Photo</span>
             </button>
 
             {/* Test button */}
@@ -152,9 +171,9 @@ const MobileLayout: React.FC = () => {
         <div className="fullscreen-game">
           <div className="game-header">
             <button className="back-button" onClick={handleBackToUpload}>
-              ← 返回上传
+              ← Back to Upload
             </button>
-            <h2>你的马里奥关卡</h2>
+            <h2>Your Mario Level</h2>
             <div className="level-info">
               {currentLevelData?.levelId && (
                 <span>ID: {currentLevelData.levelId}</span>
@@ -175,7 +194,7 @@ const MobileLayout: React.FC = () => {
 
           <div className="game-controls">
             <div className="control-hint">
-              <span>使用屏幕虚拟按键或键盘控制马里奥</span>
+              <span>Use on-screen controls or keyboard to control Mario</span>
             </div>
           </div>
         </div>
