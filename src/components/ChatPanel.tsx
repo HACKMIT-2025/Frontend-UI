@@ -253,7 +253,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
 
       // Submit the public sharing request
       try {
-        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/mario/level/${levelId}/set-public`, {
+        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/db/level/${levelId}/set-public`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
