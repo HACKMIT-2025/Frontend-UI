@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import GamePanel from './GamePanel'
 import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
+import DrawingGuideModal from './DrawingGuideModal'
 import mapProcessing from '../services/mapProcessing'
 import './MobileLayout.css'
 
@@ -15,6 +16,7 @@ const MobileLayout: React.FC = () => {
   const [showAILoader, setShowAILoader] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState('')
   const [gameLoaded, setGameLoaded] = useState(false)
+  const [showGuideModal, setShowGuideModal] = useState(false)
   const gamePanelRef = useRef<any>(null)
 
   // Debug info
@@ -96,6 +98,18 @@ const MobileLayout: React.FC = () => {
     setGameLoaded(false)
     setCurrentLevelData(null)
     setShowUploadModal(true)
+  }
+
+  // Show guide modal on first visit unless user opted out
+  useEffect(() => {
+    const dontShowAgain = localStorage.getItem('dontShowDrawingGuide')
+    if (!dontShowAgain) {
+      setShowGuideModal(true)
+    }
+  }, [])
+
+  const handleCloseGuideModal = () => {
+    setShowGuideModal(false)
   }
 
   // Debug gameLoaded state changes
@@ -212,6 +226,11 @@ const MobileLayout: React.FC = () => {
         onComplete={handleAILoaderComplete}
         uploadedFileName={uploadedFileName}
         autoComplete={false}
+      />
+
+      <DrawingGuideModal
+        isOpen={showGuideModal}
+        onClose={handleCloseGuideModal}
       />
     </div>
   )
