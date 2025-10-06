@@ -4,6 +4,7 @@ import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
 import DrawingGuideModal from './DrawingGuideModal'
 import mapProcessing from '../services/mapProcessing'
+import { gameAPI } from '../services/api'
 import './MobileLayout.css'
 
 const MobileLayout: React.FC = () => {
@@ -48,7 +49,7 @@ const MobileLayout: React.FC = () => {
     }
   }
 
-  const handleAILoaderComplete = () => {
+  const handleAILoaderComplete = async () => {
     const result = (window as any).mapProcessingResult
     setShowAILoader(false)
 
@@ -58,34 +59,28 @@ const MobileLayout: React.FC = () => {
     console.log('🔍 Mobile Condition check:', result?.success && result.level_id)
 
     if (result?.success && result.level_id) {
-      // Generate URLs using ID mode (same as ChatPanel.tsx)
-      const correctEmbedUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}&mobile=true`;
+      try {
+        // 手机模式：自动保存到数据库（public）
+        console.log('📱 Auto-publishing level to database...')
+        await gameAPI.saveLevel(
+          `Mobile Level ${new Date().toLocaleString()}`,
+          result.levelData || result.rawData,
+          'medium'
+        )
+        console.log('📱 Level published to database successfully')
 
-      const levelData = {
-        jsonUrl: correctEmbedUrl,
-        embedUrl: correctEmbedUrl,
-        levelId: result.level_id
+        // 直接跳转到游戏页面，而不是在 iframe 中加载
+        const gameUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}&mobile=true`
+        console.log('📱 Redirecting to game page:', gameUrl)
+
+        // 直接跳转
+        window.location.href = gameUrl
+      } catch (error) {
+        console.error('📱 Error publishing level:', error)
+        // 即使保存失败，也尝试跳转到游戏
+        const gameUrl = `https://frontend-mario.vercel.app/embed?id=${result.level_id}&mobile=true`
+        window.location.href = gameUrl
       }
-
-      console.log('📱 Setting level data:', levelData)
-      console.log('📱 About to set gameLoaded to true')
-
-      setCurrentLevelData(levelData)
-      setGameLoaded(true)
-
-      console.log('📱 gameLoaded set to true')
-      console.log('📱 currentLevelData:', levelData)
-
-      // Load level in game panel after state updates
-      setTimeout(() => {
-        console.log('📱 Calling loadNewLevel on gamePanelRef')
-        if (gamePanelRef.current && gamePanelRef.current.loadNewLevel) {
-          gamePanelRef.current.loadNewLevel(levelData.levelId)
-          console.log('📱 loadNewLevel called successfully')
-        } else {
-          console.warn('📱 gamePanelRef.current or loadNewLevel not available')
-        }
-      }, 100)
     } else {
       // Show error and go back to upload
       console.error('📱 Upload processing failed:', result)

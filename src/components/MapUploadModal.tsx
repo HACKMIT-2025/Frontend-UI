@@ -1,4 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
+import Cropper from 'react-easy-crop'
+import { Area } from 'react-easy-crop/types'
+import { gameAPI } from '../services/api'
 import './MapUploadModal.css'
 
 interface MapUploadModalProps {
@@ -17,6 +20,11 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [showCropper, setShowCropper] = useState(false)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Detect if device is mobile
@@ -59,14 +67,122 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string)
+        setShowCropper(true) // Show cropper after image loads
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleUpload = () => {
-    if (selectedFile) {
-      onUpload(selectedFile)
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
+
+  const createCroppedImage = async (): Promise<File | null> => {
+    if (!previewUrl || !croppedAreaPixels) return null
+
+    const image = new Image()
+    image.src = previewUrl
+
+    return new Promise((resolve) => {
+      image.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+          resolve(null)
+          return
+        }
+
+        // Set canvas size to cropped area
+        canvas.width = croppedAreaPixels.width
+        canvas.height = croppedAreaPixels.height
+
+        // Draw the cropped image
+        ctx.drawImage(
+          image,
+          croppedAreaPixels.x,
+          croppedAreaPixels.y,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height,
+          0,
+          0,
+          croppedAreaPixels.width,
+          croppedAreaPixels.height
+        )
+
+        // Convert canvas to blob then to File
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const croppedFile = new File([blob], selectedFile?.name || 'cropped-map.jpg', {
+              type: 'image/jpeg',
+            })
+            resolve(croppedFile)
+          } else {
+            resolve(null)
+          }
+        }, 'image/jpeg', 0.95)
+      }
+    })
+  }
+
+  const handleUpload = async () => {
+    try {
+      setIsScanning(true)
+
+      let fileToProcess: File | null = null
+
+      if (showCropper) {
+        // Create cropped image
+        fileToProcess = await createCroppedImage()
+      } else if (selectedFile) {
+        fileToProcess = selectedFile
+      }
+
+      if (!fileToProcess) {
+        setIsScanning(false)
+        return
+      }
+
+      // Convert file to base64
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64String = reader.result as string
+
+        try {
+          // Step 1: Scan and enhance document to black/white
+          console.log('Scanning and enhancing document...')
+          const scanResult = await gameAPI.scanDocument(base64String, false, 'adaptive')
+
+          if (scanResult.success && scanResult.image_base64) {
+            // Convert enhanced base64 back to File
+            const response = await fetch(scanResult.image_base64)
+            const blob = await response.blob()
+            const enhancedFile = new File([blob], fileToProcess!.name.replace(/\.[^/.]+$/, '_enhanced.png'), {
+              type: 'image/png',
+            })
+
+            console.log('Document enhanced successfully')
+
+            // Step 2: Upload the enhanced image for processing
+            onUpload(enhancedFile)
+          } else {
+            // If scanning fails, use original
+            console.warn('Document scanning failed, using original image')
+            onUpload(fileToProcess!)
+          }
+        } catch (error) {
+          console.error('Error during document scanning:', error)
+          // If scanning fails, use original
+          onUpload(fileToProcess!)
+        } finally {
+          setIsScanning(false)
+        }
+      }
+
+      reader.readAsDataURL(fileToProcess)
+    } catch (error) {
+      console.error('Error in handleUpload:', error)
+      setIsScanning(false)
     }
   }
 
@@ -76,14 +192,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   return (
     <div className="modal-overlay">
       <div className="modal-container">
-        {!isProcessing && (
+        {!isProcessing && !isScanning && (
           <button className="modal-close" onClick={onClose}>
             <span>✕</span>
           </button>
         )}
 
         <div className="modal-content">
-          {isProcessing ? (
+          {isProcessing || isScanning ? (
             <div className="processing-container">
               <div className="processing-animation">
                 <div className="scanner-line"></div>
@@ -99,14 +215,16 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   <div className="pulse-circle"></div>
                 </div>
               </div>
-              <h2 className="processing-title">Analyzing Your Map</h2>
-              <p className="processing-subtitle">OpenCV detecting shapes and boundaries...</p>
+              <h2 className="processing-title">{isScanning ? 'Enhancing Document' : 'Analyzing Your Map'}</h2>
+              <p className="processing-subtitle">
+                {isScanning ? 'Converting to high-contrast black & white...' : 'OpenCV detecting shapes and boundaries...'}
+              </p>
               <div className="processing-steps">
-                <div className="step active">
-                  <span className="step-icon">🔍</span>
-                  <span>Scanning image</span>
+                <div className={`step ${isScanning ? 'active' : 'completed'}`}>
+                  <span className="step-icon">⚫⚪</span>
+                  <span>B&W Enhancement</span>
                 </div>
-                <div className="step">
+                <div className={`step ${isProcessing && !isScanning ? 'active' : ''}`}>
                   <span className="step-icon">📐</span>
                   <span>Detecting shapes (⬡✕▲●)</span>
                 </div>
@@ -118,29 +236,69 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
             </div>
           ) : previewUrl ? (
             <div className="preview-container">
-              <h2 className="modal-title">Review Your Map</h2>
-              <div className="preview-image-container">
-                <img src={previewUrl} alt="Map preview" className="preview-image" />
-                <div className="preview-overlay">
-                  <div className="preview-grid"></div>
-                </div>
-              </div>
-              <div className="preview-info">
-                <div className="info-item">
-                  <span className="info-icon">📄</span>
-                  <span className="info-text">{selectedFile?.name}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-icon">📏</span>
-                  <span className="info-text">
-                    {selectedFile && `${(selectedFile.size / 1024).toFixed(1)} KB`}
-                  </span>
-                </div>
-              </div>
+              <h2 className="modal-title">{showCropper ? '✂️ Crop Your Map' : 'Review Your Map'}</h2>
+
+              {showCropper ? (
+                <>
+                  <div className="cropper-container">
+                    <Cropper
+                      image={previewUrl}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={4 / 3}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                    />
+                  </div>
+                  <div className="crop-controls">
+                    <label className="control-label">
+                      <span>🔍 Zoom</span>
+                      <input
+                        type="range"
+                        min={1}
+                        max={3}
+                        step={0.1}
+                        value={zoom}
+                        onChange={(e) => setZoom(Number(e.target.value))}
+                        className="zoom-slider"
+                      />
+                    </label>
+                  </div>
+                  <p className="crop-hint">
+                    💡 Drag to position, pinch or use slider to zoom. Select only the paper area to recognize.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="preview-image-container">
+                    <img src={previewUrl} alt="Map preview" className="preview-image" />
+                    <div className="preview-overlay">
+                      <div className="preview-grid"></div>
+                    </div>
+                  </div>
+                  <div className="preview-info">
+                    <div className="info-item">
+                      <span className="info-icon">📄</span>
+                      <span className="info-text">{selectedFile?.name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-icon">📏</span>
+                      <span className="info-text">
+                        {selectedFile && `${(selectedFile.size / 1024).toFixed(1)} KB`}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={() => {
                   setPreviewUrl(null)
                   setSelectedFile(null)
+                  setShowCropper(false)
+                  setCrop({ x: 0, y: 0 })
+                  setZoom(1)
                 }}>
                   Choose Different
                 </button>

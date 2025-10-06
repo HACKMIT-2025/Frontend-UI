@@ -320,6 +320,60 @@ export class GameAPI {
       throw error;
     }
   }
+
+  // Scan and enhance document to black/white
+  async scanDocument(imageBase64: string, autoDetectEdges: boolean = true, thresholdMethod: string = 'adaptive'): Promise<any> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/opencv/scan-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_base64: imageBase64,
+          auto_detect_edges: autoDetectEdges,
+          enhance_contrast: true,
+          threshold_method: thresholdMethod
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to scan document: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error scanning document:', error);
+      throw error;
+    }
+  }
+
+  // Process image with OpenCV for shape detection
+  async processImageWithOpenCV(imageBase64: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/opencv/process-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_base64: imageBase64,
+          simplify_contours: true,
+          max_vertices: 150,
+          simplification_factor: 0.002
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to process image: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error processing image with OpenCV:', error);
+      throw error;
+    }
+  }
 }
 
 // Export instances
