@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
 import Cropper from 'react-easy-crop'
-import { Area } from 'react-easy-crop/types'
+import type { Area } from 'react-easy-crop'
 import { gameAPI } from '../services/api'
 import './MapUploadModal.css'
 
@@ -73,7 +73,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     }
   }
 
-  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }, [])
 
