@@ -11,6 +11,7 @@ interface GamePanelProps {
 
 interface GamePanelRef {
   loadNewLevel: (levelId: string) => void;
+  loadLevelPack: (packId: number) => void;
 }
 
 
@@ -72,9 +73,22 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, 
     console.log('✅ GamePanel loadNewLevel completed')
   }
 
-  // Expose the loadNewLevel function via ref
+  // Function to load level pack (exposed via ref)
+  const loadLevelPack = (packId: number) => {
+    console.log('🎮 GamePanel loadLevelPack called with pack ID:', packId)
+    const baseUrl = 'https://frontend-mario.vercel.app/embed'
+    const url = `${baseUrl}?pack=${packId}${isMobile ? '&mobile=true' : ''}`
+    console.log('🔗 Generated pack URL:', url)
+    setIframeUrl(url)
+    setError(null)
+    onLevelLoaded?.()
+    console.log('✅ GamePanel loadLevelPack completed')
+  }
+
+  // Expose the loadNewLevel and loadLevelPack functions via ref
   useImperativeHandle(ref, () => ({
-    loadNewLevel
+    loadNewLevel,
+    loadLevelPack
   }), [])
 
 

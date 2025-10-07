@@ -46,6 +46,21 @@ const Layout: React.FC = () => {
     }
   }
 
+  const handleLevelPackGenerated = (packData: {
+    packId: number,
+    levelIds: number[]
+  }) => {
+    console.log('🎮 Layout handleLevelPackGenerated called with:', packData)
+
+    // Load level pack
+    if (gamePanelRef.current && gamePanelRef.current.loadLevelPack) {
+      console.log('✅ GamePanel ref is available, loading level pack:', packData.packId)
+      gamePanelRef.current.loadLevelPack(packData.packId)
+    } else {
+      console.log('❌ GamePanel ref is not available or loadLevelPack method missing')
+    }
+  }
+
   const handleLevelLoaded = () => {
     console.log('Level loaded in game panel')
   }
@@ -75,7 +90,10 @@ const Layout: React.FC = () => {
       </div>
       <div className="divider"></div>
       <div className="chat-section">
-        <ChatPanel onLevelGenerated={handleLevelGenerated} />
+        <ChatPanel
+          onLevelGenerated={handleLevelGenerated}
+          onLevelPackGenerated={handleLevelPackGenerated}
+        />
       </div>
 
       <DrawingGuideModal

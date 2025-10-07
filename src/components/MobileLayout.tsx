@@ -27,7 +27,12 @@ const MobileLayout: React.FC = () => {
   console.log('📱 User agent:', navigator.userAgent)
   console.log('📱 Screen width:', window.innerWidth)
 
-  const handleMapUpload = async (file: File) => {
+  const handleMapUpload = async (files: File | File[]) => {
+    // Mobile only supports single file
+    const file = Array.isArray(files) ? files[0] : files
+
+    if (!file) return
+
     setUploadedFileName(file.name)
     setShowUploadModal(false)
     setShowAILoader(true)

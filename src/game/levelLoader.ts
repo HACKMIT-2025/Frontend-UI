@@ -21,12 +21,90 @@ export interface LevelData {
 
 export interface LevelLoadResult {
   data: LevelData
-  source: 'api' | 'url' | 'json' | 'default'
+  source: 'api' | 'url' | 'json' | 'default' | 'pack'
   id?: string
+  packId?: number
+  packInfo?: {
+    name: string
+    totalLevels: number
+    currentIndex: number
+  }
 }
 
 export class LevelLoader {
   private static defaultApiUrl = 'https://25hackmit--image-recognition-api-fastapi-app.modal.run'
+  private static backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  /**
+   * Load a level pack with all its levels
+   */
+  static async loadLevelPack(packId: number): Promise<{
+    pack: any
+    levels: LevelLoadResult[]
+  }> {
+    try {
+      console.log(`🎮 Loading level pack ${packId}...`)
+
+      const response = await fetch(`${this.backendUrl}/api/level-packs/${packId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const packData = await response.json()
+      console.log('📦 Level pack data received:', packData)
+
+      // Extract pack info and levels
+      const pack = packData.pack
+      const rawLevels = packData.levels || []
+
+      // Convert each level to LevelLoadResult format
+      const levels: LevelLoadResult[] = rawLevels.map((levelRow: any, index: number) => {
+        // Parse the data field if it's a string
+        const levelData = typeof levelRow.data === 'string'
+          ? JSON.parse(levelRow.data)
+          : levelRow.data
+
+        return {
+          data: this.validateLevelData(levelData.level_data || levelData),
+          source: 'pack' as const,
+          id: levelRow.id?.toString(),
+          packId: packId,
+          packInfo: {
+            name: pack.name,
+            totalLevels: rawLevels.length,
+            currentIndex: index
+          }
+        }
+      })
+
+      console.log(`✅ Loaded ${levels.length} levels from pack "${pack.name}"`)
+
+      return { pack, levels }
+    } catch (error) {
+      console.error('❌ Failed to load level pack:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Load a specific level from a pack by index
+   */
+  static async loadLevelFromPack(packId: number, levelIndex: number): Promise<LevelLoadResult> {
+    const { levels } = await this.loadLevelPack(packId)
+
+    if (levelIndex < 0 || levelIndex >= levels.length) {
+      throw new Error(`Level index ${levelIndex} out of range (0-${levels.length - 1})`)
+    }
+
+    return levels[levelIndex]
+  }
 
   /**
    * Load level from backend JSON URL directly (for React integration)

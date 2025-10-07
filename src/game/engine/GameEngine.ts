@@ -21,6 +21,15 @@ export interface GameConfig {
   start_y?: number
 }
 
+export interface LevelPackData {
+  packId: number
+  levels: any[]
+  packInfo: {
+    name: string
+    totalLevels: number
+  }
+}
+
 export class GameEngine {
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
@@ -44,6 +53,10 @@ export class GameEngine {
   private coins = 0
   private spriteLoader: SpriteLoader
   private spritesInitialized = false
+
+  // Level pack support
+  private levelPack: LevelPackData | null = null
+  private currentLevelIndex = 0
 
   constructor(canvas: HTMLCanvasElement, config: GameConfig = {}) {
     this.canvas = canvas
@@ -123,6 +136,97 @@ export class GameEngine {
     // Always add player back if exists
     if (this.player) {
       this.entityManager.addEntity(this.player)
+    }
+  }
+
+  /**
+   * Load a level pack for sequential play
+   */
+  public loadLevelPack(packData: LevelPackData) {
+    console.log(`🎮 Loading level pack: ${packData.packInfo.name}`)
+    this.levelPack = packData
+    this.currentLevelIndex = 0
+
+    // Load the first level
+    if (packData.levels.length > 0) {
+      this.loadLevelFromPack(0)
+    }
+  }
+
+  /**
+   * Load a specific level from the current pack
+   */
+  private loadLevelFromPack(index: number) {
+    if (!this.levelPack || index >= this.levelPack.levels.length) {
+      console.error('Invalid level index or no pack loaded')
+      return
+    }
+
+    this.currentLevelIndex = index
+    const levelResult = this.levelPack.levels[index]
+
+    console.log(`📖 Loading level ${index + 1}/${this.levelPack.levels.length} from pack`)
+
+    // Build the level from level data
+    const levelData = levelResult.data
+    const newLevel = new Level()
+
+    // Add platforms from rigid_bodies
+    if (levelData.rigid_bodies) {
+      levelData.rigid_bodies.forEach((body: any) => {
+        if (body.contour_points && body.contour_points.length >= 3) {
+          newLevel.addPolygon(body.contour_points)
+        }
+      })
+    }
+
+    // Add coins
+    if (levelData.coins) {
+      levelData.coins.forEach((coin: any) => {
+        newLevel.addCoin(coin.x, coin.y)
+      })
+    }
+
+    // Add enemies
+    if (levelData.enemies) {
+      levelData.enemies.forEach((enemy: any) => {
+        newLevel.addEnemy(enemy.x, enemy.y, enemy.type || 'goomba')
+      })
+    }
+
+    // Set player start position
+    if (levelData.starting_points && levelData.starting_points.length > 0) {
+      const start = levelData.starting_points[0].coordinates
+      if (this.player) {
+        this.player.position.x = start[0]
+        this.player.position.y = start[1]
+      }
+    }
+
+    // Set goal/end point
+    if (levelData.end_points && levelData.end_points.length > 0) {
+      const end = levelData.end_points[0].coordinates
+      // Add a goal pipe platform at the end point
+      newLevel.addPlatform(end[0], end[1], 50, 100, 'goal_pipe')
+    }
+
+    this.loadLevel(newLevel)
+  }
+
+  /**
+   * Check if there is a next level in the pack
+   */
+  public hasNextLevel(): boolean {
+    return this.levelPack !== null &&
+           this.currentLevelIndex < this.levelPack.levels.length - 1
+  }
+
+  /**
+   * Load the next level in the pack
+   */
+  public loadNextLevel() {
+    if (this.hasNextLevel()) {
+      this.loadLevelFromPack(this.currentLevelIndex + 1)
     }
   }
 
@@ -417,10 +521,55 @@ export class GameEngine {
   }
 
   private victory() {
-    this.running = false
     this.score += 1000 // Bonus points for completing level
-    console.log('🎉 Victory! Score:', this.score)
+    console.log('🎉 Level Complete! Score:', this.score)
 
+    // Check if in level pack mode
+    if (this.levelPack && this.hasNextLevel()) {
+      this.displayLevelComplete()
+
+      // Auto-advance to next level after 3 seconds
+      setTimeout(() => {
+        if (this.running) {
+          this.loadNextLevel()
+          this.resetPlayerForNewLevel()
+        }
+      }, 3000)
+    } else {
+      // Single level or last level of pack - full victory
+      this.running = false
+      this.displayPackComplete()
+    }
+  }
+
+  private displayLevelComplete() {
+    // Display "Level Complete" overlay
+    this.ctx.save()
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+
+    this.ctx.fillStyle = '#FFD700'
+    this.ctx.font = 'bold 48px Arial'
+    this.ctx.textAlign = 'center'
+    this.ctx.fillText(`✨ Level ${this.currentLevelIndex + 1} Complete! ✨`, this.canvas.width / 2, this.canvas.height / 2 - 50)
+
+    this.ctx.fillStyle = '#FFFFFF'
+    this.ctx.font = '32px Arial'
+    this.ctx.fillText(`Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20)
+
+    if (this.levelPack) {
+      this.ctx.font = '24px Arial'
+      this.ctx.fillText(
+        `Advancing to Level ${this.currentLevelIndex + 2}/${this.levelPack.levels.length}...`,
+        this.canvas.width / 2,
+        this.canvas.height / 2 + 70
+      )
+    }
+
+    this.ctx.restore()
+  }
+
+  private displayPackComplete() {
     // Display victory message on canvas
     this.ctx.save()
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
@@ -429,15 +578,43 @@ export class GameEngine {
     this.ctx.fillStyle = '#FFD700'
     this.ctx.font = 'bold 48px Arial'
     this.ctx.textAlign = 'center'
-    this.ctx.fillText('🎉 VICTORY! 🎉', this.canvas.width / 2, this.canvas.height / 2 - 50)
+
+    if (this.levelPack) {
+      this.ctx.fillText('🎊 PACK COMPLETE! 🎊', this.canvas.width / 2, this.canvas.height / 2 - 50)
+      this.ctx.fillStyle = '#FFFFFF'
+      this.ctx.font = '28px Arial'
+      this.ctx.fillText(
+        `You completed all ${this.levelPack.levels.length} levels!`,
+        this.canvas.width / 2,
+        this.canvas.height / 2 + 10
+      )
+    } else {
+      this.ctx.fillText('🎉 VICTORY! 🎉', this.canvas.width / 2, this.canvas.height / 2 - 50)
+    }
 
     this.ctx.fillStyle = '#FFFFFF'
     this.ctx.font = '32px Arial'
-    this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20)
+    this.ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 60)
 
     this.ctx.font = '20px Arial'
-    this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 60)
+    this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 100)
     this.ctx.restore()
+  }
+
+  private resetPlayerForNewLevel() {
+    if (!this.player) return
+
+    // Reset player state for new level
+    this.player.velocity.x = 0
+    this.player.velocity.y = 0
+
+    // Set to starting position of new level
+    const levelData = this.levelPack?.levels[this.currentLevelIndex]?.data
+    if (levelData?.starting_points && levelData.starting_points.length > 0) {
+      const start = levelData.starting_points[0].coordinates
+      this.player.position.x = start[0]
+      this.player.position.y = start[1]
+    }
   }
 
   private render() {
@@ -479,6 +656,27 @@ export class GameEngine {
       lives: this.lives,
       coins: this.coins
     })
+
+    // Render level pack progress if in pack mode
+    if (this.levelPack) {
+      this.renderPackProgress()
+    }
+  }
+
+  private renderPackProgress() {
+    if (!this.levelPack) return
+
+    this.ctx.save()
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+    this.ctx.font = '16px Arial'
+    this.ctx.textAlign = 'center'
+    this.ctx.fillStyle = '#FFD700'
+    this.ctx.fillText(
+      `Level ${this.currentLevelIndex + 1}/${this.levelPack.levels.length}`,
+      this.canvas.width / 2,
+      30
+    )
+    this.ctx.restore()
   }
 
   private updateUI() {

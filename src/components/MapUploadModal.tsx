@@ -7,19 +7,21 @@ import './MapUploadModal.css'
 interface MapUploadModalProps {
   isOpen: boolean
   onClose: () => void
-  onUpload: (file: File) => void
+  onUpload: (files: File | File[]) => void
   isProcessing: boolean
+  allowMultiple?: boolean  // Whether to allow multiple file upload
 }
 
 const MapUploadModal: React.FC<MapUploadModalProps> = ({
   isOpen,
   onClose,
   onUpload,
-  isProcessing
+  isProcessing,
+  allowMultiple = false
 }) => {
   const [dragActive, setDragActive] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [showCropper, setShowCropper] = useState(false)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -45,15 +47,15 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     e.stopPropagation()
     setDragActive(false)
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0])
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(Array.from(e.dataTransfer.files))
     }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault()
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0])
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(Array.from(e.target.files))
     }
   }
 
@@ -61,16 +63,34 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     inputRef.current?.click()
   }
 
-  const handleFile = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      setSelectedFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string)
-        setShowCropper(true) // Show cropper after image loads
-      }
-      reader.readAsDataURL(file)
-    }
+  const handleFiles = (files: File[]) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'))
+
+    if (imageFiles.length === 0) return
+
+    // If not allowing multiple, only take the first file
+    const filesToProcess = allowMultiple ? imageFiles : [imageFiles[0]]
+
+    setSelectedFiles(filesToProcess)
+
+    // Load previews for all files
+    const loadPromises = filesToProcess.map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+    })
+
+    Promise.all(loadPromises).then(urls => {
+      setPreviewUrls(urls)
+      setShowCropper(false) // Skip cropper for multiple images, or show for first image
+    })
+  }
+
+  const removeImage = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
   }
 
   const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
@@ -78,10 +98,10 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }, [])
 
   const createCroppedImage = async (): Promise<File | null> => {
-    if (!previewUrl || !croppedAreaPixels) return null
+    if (previewUrls.length === 0 || !croppedAreaPixels) return null
 
     const image = new Image()
-    image.src = previewUrl
+    image.src = previewUrls[0]
 
     return new Promise((resolve) => {
       image.onload = () => {
@@ -113,7 +133,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
         // Convert canvas to blob then to File
         canvas.toBlob((blob) => {
           if (blob) {
-            const croppedFile = new File([blob], selectedFile?.name || 'cropped-map.jpg', {
+            const croppedFile = new File([blob], selectedFiles[0]?.name || 'cropped-map.jpg', {
               type: 'image/jpeg',
             })
             resolve(croppedFile)
@@ -129,13 +149,27 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     try {
       setIsScanning(true)
 
+      if (selectedFiles.length === 0) {
+        setIsScanning(false)
+        return
+      }
+
+      // If multiple files, skip cropper and enhancement, just upload directly
+      if (allowMultiple && selectedFiles.length > 1) {
+        console.log(`Uploading ${selectedFiles.length} files for level pack creation...`)
+        onUpload(selectedFiles)
+        setIsScanning(false)
+        return
+      }
+
+      // Single file mode - use cropper and enhancement
       let fileToProcess: File | null = null
 
-      if (showCropper) {
+      if (showCropper && selectedFiles.length === 1) {
         // Create cropped image
         fileToProcess = await createCroppedImage()
-      } else if (selectedFile) {
-        fileToProcess = selectedFile
+      } else if (selectedFiles.length > 0) {
+        fileToProcess = selectedFiles[0]
       }
 
       if (!fileToProcess) {
@@ -234,15 +268,19 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : previewUrl ? (
+          ) : previewUrls.length > 0 ? (
             <div className="preview-container">
-              <h2 className="modal-title">{showCropper ? '✂️ Crop Your Map' : 'Review Your Map'}</h2>
+              <h2 className="modal-title">
+                {allowMultiple && selectedFiles.length > 1
+                  ? `🎮 Review Your ${selectedFiles.length} Maps`
+                  : showCropper ? '✂️ Crop Your Map' : 'Review Your Map'}
+              </h2>
 
-              {showCropper ? (
+              {showCropper && !allowMultiple && previewUrls.length === 1 ? (
                 <>
                   <div className="cropper-container">
                     <Cropper
-                      image={previewUrl}
+                      image={previewUrls[0]}
                       crop={crop}
                       zoom={zoom}
                       aspect={4 / 3}
@@ -271,31 +309,68 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </>
               ) : (
                 <>
-                  <div className="preview-image-container">
-                    <img src={previewUrl} alt="Map preview" className="preview-image" />
-                    <div className="preview-overlay">
-                      <div className="preview-grid"></div>
+                  {/* Multi-image preview grid */}
+                  {allowMultiple && selectedFiles.length > 1 ? (
+                    <div className="multi-images-preview-grid">
+                      {previewUrls.map((url, index) => (
+                        <div key={index} className="multi-image-preview-item">
+                          <img src={url} alt={`Map ${index + 1}`} />
+                          <button
+                            type="button"
+                            className="remove-preview-image"
+                            onClick={() => removeImage(index)}
+                            title="Remove this image"
+                          >
+                            ×
+                          </button>
+                          <span className="image-number">{index + 1}</span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ) : (
+                    /* Single image preview */
+                    <div className="preview-image-container">
+                      <img src={previewUrls[0]} alt="Map preview" className="preview-image" />
+                      <div className="preview-overlay">
+                        <div className="preview-grid"></div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="preview-info">
-                    <div className="info-item">
-                      <span className="info-icon">📄</span>
-                      <span className="info-text">{selectedFile?.name}</span>
-                    </div>
-                    <div className="info-item">
-                      <span className="info-icon">📏</span>
-                      <span className="info-text">
-                        {selectedFile && `${(selectedFile.size / 1024).toFixed(1)} KB`}
-                      </span>
-                    </div>
+                    {allowMultiple && selectedFiles.length > 1 ? (
+                      <>
+                        <div className="info-item">
+                          <span className="info-icon">📚</span>
+                          <span className="info-text">{selectedFiles.length} images selected</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-icon">🎯</span>
+                          <span className="info-text">Will create {selectedFiles.length}-level pack</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="info-item">
+                          <span className="info-icon">📄</span>
+                          <span className="info-text">{selectedFiles[0]?.name}</span>
+                        </div>
+                        <div className="info-item">
+                          <span className="info-icon">📏</span>
+                          <span className="info-text">
+                            {selectedFiles[0] && `${(selectedFiles[0].size / 1024).toFixed(1)} KB`}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </>
               )}
 
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={() => {
-                  setPreviewUrl(null)
-                  setSelectedFile(null)
+                  setPreviewUrls([])
+                  setSelectedFiles([])
                   setShowCropper(false)
                   setCrop({ x: 0, y: 0 })
                   setZoom(1)
@@ -304,7 +379,9 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 </button>
                 <button className="btn-primary" onClick={handleUpload}>
                   <span className="btn-icon">🚀</span>
-                  Process Map
+                  {allowMultiple && selectedFiles.length > 1
+                    ? `Create ${selectedFiles.length}-Level Pack`
+                    : 'Process Map'}
                 </button>
               </div>
             </div>
@@ -335,7 +412,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   ref={inputRef}
                   type="file"
                   className="file-input"
-                  multiple={false}
+                  multiple={allowMultiple}
                   onChange={handleChange}
                   accept="image/*"
                 />
@@ -387,7 +464,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
-                          handleFile(e.target.files[0])
+                          handleFiles([e.target.files[0]])
                         }
                       }}
                       style={{ display: 'none' }}

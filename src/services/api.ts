@@ -374,6 +374,108 @@ export class GameAPI {
       throw error;
     }
   }
+
+  // Create a level pack from multiple levels
+  async createLevelPack(data: {
+    name: string;
+    description?: string;
+    level_ids: number[];
+    created_by: string;
+    is_public?: boolean;
+  }): Promise<any> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/level-packs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || '',
+          level_ids: data.level_ids,
+          created_by: data.created_by,
+          is_public: data.is_public || false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create level pack: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating level pack:', error);
+      throw error;
+    }
+  }
+
+  // Get level pack details
+  async getLevelPack(packId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/level-packs/${packId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to get level pack: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting level pack:', error);
+      throw error;
+    }
+  }
+
+  // Save player progress for a level pack
+  async savePackProgress(packId: number, data: {
+    player_nickname: string;
+    current_level_index: number;
+    completed_levels: number[];
+    total_time_ms?: number;
+    total_deaths?: number;
+  }): Promise<any> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/level-packs/${packId}/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          player_nickname: data.player_nickname,
+          current_level_index: data.current_level_index,
+          completed_levels: data.completed_levels,
+          total_time_ms: data.total_time_ms || 0,
+          total_deaths: data.total_deaths || 0
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save pack progress: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving pack progress:', error);
+      throw error;
+    }
+  }
+
+  // Get player progress for a level pack
+  async getPackProgress(packId: number, nickname: string): Promise<any> {
+    try {
+      const response = await fetch(
+        `${this.backendUrl}/api/level-packs/${packId}/progress/${nickname}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get pack progress: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting pack progress:', error);
+      throw error;
+    }
+  }
 }
 
 // Export instances

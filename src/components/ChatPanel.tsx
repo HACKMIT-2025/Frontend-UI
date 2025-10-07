@@ -3,7 +3,7 @@ import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import MapUploadModal from './MapUploadModal'
 import AICodeGeneratorLoader from './AICodeGeneratorLoader'
-import chatAPI from '../services/api'
+import chatAPI, { gameAPI } from '../services/api'
 import mapProcessing from '../services/mapProcessing'
 import './ChatPanel.css'
 
@@ -18,9 +18,10 @@ export interface Message {
 
 interface ChatPanelProps {
   onLevelGenerated?: (levelData: { jsonUrl?: string, embedUrl?: string, levelId?: string }) => void;
+  onLevelPackGenerated?: (packData: { packId: number, levelIds: number[] }) => void;
 }
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
+const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGenerated }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -46,7 +47,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
     scrollToBottom()
   }, [messages])
 
-  const handleSendMessage = async (content: string, image?: File) => {
+  const handleSendMessage = async (content: string, images?: File[]) => {
     // Handle special cases first
     if (waitingForPublicName && content.trim()) {
       const userMessage: Message = {
@@ -63,14 +64,30 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       return
     }
 
+    // Handle multiple images - trigger level pack creation
+    if (images && images.length > 1) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: `Uploaded ${images.length} maps to create a level pack`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMessage])
+
+      // Process multiple maps
+      await handleMultipleMapUpload(images)
+      return
+    }
+
+    // Handle single image
     let imageBase64: string | undefined = undefined
 
     // Convert image to base64 if provided
-    if (image) {
+    if (images && images.length === 1) {
       const reader = new FileReader()
       imageBase64 = await new Promise<string>((resolve) => {
         reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(image)
+        reader.readAsDataURL(images[0])
       })
     }
 
@@ -79,7 +96,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
       type: 'user',
       content,
       timestamp: new Date(),
-      image: image ? URL.createObjectURL(image) : undefined,
+      image: images && images.length === 1 ? URL.createObjectURL(images[0]) : undefined,
     }
 
     setMessages(prev => [...prev, userMessage])
@@ -133,7 +150,93 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
   }
 
 
-  const handleMapUpload = async (file: File) => {
+  // Handle multiple map upload for level pack creation
+  const handleMultipleMapUpload = async (files: File[]) => {
+    const levelIds: number[] = []
+    const totalFiles = files.length
+
+    try {
+      setShowAILoader(true)
+      setIsProcessingMap(true)
+
+      // Process each file sequentially
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+
+        // Update progress message
+        const progressMessage: Message = {
+          id: Date.now().toString() + i,
+          type: 'ai',
+          content: `📝 Processing map ${i + 1}/${totalFiles}: ${file.name}...`,
+          timestamp: new Date(),
+        }
+        setMessages(prev => [...prev, progressMessage])
+
+        // Process this map
+        const result = await mapProcessing.processMap(file, (step: string, message: string) => {
+          console.log(`Map ${i + 1}: ${step} - ${message}`)
+        })
+
+        if (result.success && result.level_id) {
+          levelIds.push(Number(result.level_id))
+          console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
+        } else {
+          throw new Error(`Failed to process map ${i + 1}: ${file.name}`)
+        }
+      }
+
+      // All maps processed, create level pack
+      const packName = `Level Pack - ${new Date().toLocaleDateString()}`
+      const packResult = await gameAPI.createLevelPack({
+        name: packName,
+        description: `Created from ${totalFiles} hand-drawn maps`,
+        level_ids: levelIds,
+        created_by: 'user',
+        is_public: false
+      })
+
+      console.log('✅ Level pack created:', packResult)
+
+      // Success message
+      const successMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `🎉 **Level Pack Created Successfully!**\n\nYour ${totalFiles}-level pack has been created!\n\n✨ Play through each level in sequence. Complete one to unlock the next!`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, successMessage])
+
+      // Notify parent to load the level pack
+      if (onLevelPackGenerated) {
+        onLevelPackGenerated({
+          packId: packResult.pack_id,
+          levelIds: levelIds
+        })
+      }
+
+    } catch (error) {
+      console.error('Error processing multiple maps:', error)
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ **Error:** ${error instanceof Error ? error.message : 'Failed to create level pack'}`,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setShowAILoader(false)
+      setIsProcessingMap(false)
+    }
+  }
+
+  const handleMapUpload = async (file: File | File[]) => {
+    // Handle multiple files
+    if (Array.isArray(file)) {
+      await handleMultipleMapUpload(file)
+      return
+    }
+
+    // Handle single file (existing logic)
     setUploadedFileName(file.name)
     setShowAILoader(true)
 
@@ -498,6 +601,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated }) => {
         onClose={() => setShowMapUpload(false)}
         onUpload={handleMapUpload}
         isProcessing={isProcessingMap}
+        allowMultiple={true}
       />
 
       <AICodeGeneratorLoader
