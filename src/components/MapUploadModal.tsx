@@ -55,7 +55,9 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault()
     if (e.target.files && e.target.files.length > 0) {
-      handleFiles(Array.from(e.target.files))
+      // Check if we already have files and should append
+      const appendMode = selectedFiles.length > 0 && allowMultiple
+      handleFiles(Array.from(e.target.files), appendMode)
     }
   }
 
@@ -63,7 +65,12 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     inputRef.current?.click()
   }
 
-  const handleFiles = (files: File[]) => {
+  const handleAddMore = () => {
+    // Trigger file input to add more images
+    inputRef.current?.click()
+  }
+
+  const handleFiles = (files: File[], appendMode = false) => {
     const imageFiles = files.filter(f => f.type.startsWith('image/'))
 
     if (imageFiles.length === 0) return
@@ -71,21 +78,41 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     // If not allowing multiple, only take the first file
     const filesToProcess = allowMultiple ? imageFiles : [imageFiles[0]]
 
-    setSelectedFiles(filesToProcess)
+    // Append mode: add to existing files
+    if (appendMode && allowMultiple) {
+      setSelectedFiles(prev => [...prev, ...filesToProcess])
 
-    // Load previews for all files
-    const loadPromises = filesToProcess.map(file => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(file)
+      // Load previews for new files only
+      const loadPromises = filesToProcess.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
       })
-    })
 
-    Promise.all(loadPromises).then(urls => {
-      setPreviewUrls(urls)
-      setShowCropper(false) // Skip cropper for multiple images, or show for first image
-    })
+      Promise.all(loadPromises).then(newUrls => {
+        setPreviewUrls(prev => [...prev, ...newUrls])
+        setShowCropper(false)
+      })
+    } else {
+      // Replace mode: clear and set new files
+      setSelectedFiles(filesToProcess)
+
+      // Load previews for all files
+      const loadPromises = filesToProcess.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+      })
+
+      Promise.all(loadPromises).then(urls => {
+        setPreviewUrls(urls)
+        setShowCropper(false) // Skip cropper for multiple images, or show for first image
+      })
+    }
   }
 
   const removeImage = (index: number) => {
@@ -377,10 +404,16 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                 }}>
                   Choose Different
                 </button>
+                {allowMultiple && (
+                  <button className="btn-add-more" onClick={handleAddMore}>
+                    <span className="btn-icon">➕</span>
+                    Add More
+                  </button>
+                )}
                 <button className="btn-primary" onClick={handleUpload}>
                   <span className="btn-icon">🚀</span>
                   {allowMultiple && selectedFiles.length > 1
-                    ? `Create ${selectedFiles.length}-Level Pack`
+                    ? `Process ${selectedFiles.length} Maps`
                     : 'Process Map'}
                 </button>
               </div>
