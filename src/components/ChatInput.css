@@ -4,29 +4,50 @@
 
 /* Multi-image preview grid */
 .images-preview-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.images-preview-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.images-preview-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.images-preview-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--color-accent-green), var(--color-accent-blue));
+  border-radius: 3px;
 }
 
 .image-preview-item {
   position: relative;
-  display: inline-block;
+  width: 120px;
+  height: 90px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .image-preview-item img {
-  max-width: 120px;
-  max-height: 90px;
+  width: 100%;
+  height: 100%;
   border-radius: 0.5rem;
   box-shadow: 0 0 20px rgba(52, 178, 152, 0.3);
   border: 1px solid var(--color-accent-green);
   transition: all 0.3s ease;
   object-fit: cover;
+  display: block;
 }
 
 .image-preview-item img:hover {
@@ -62,7 +83,8 @@
 }
 
 .remove-all-images {
-  align-self: center;
+  grid-column: 1 / -1;
+  justify-self: center;
   padding: 0.5rem 1rem;
   background: linear-gradient(135deg, #ff4757, #ff3838);
   color: white;
@@ -73,6 +95,7 @@
   font-weight: 600;
   box-shadow: 0 0 15px rgba(255, 71, 87, 0.4);
   transition: all 0.3s ease;
+  margin-top: 0.25rem;
 }
 
 .remove-all-images:hover {
@@ -214,4 +237,31 @@
 
 .send-button.active .send-icon {
   transform: translateX(1px);
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .images-preview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+    max-height: 200px;
+  }
+
+  .image-preview-item {
+    width: 100px;
+    height: 75px;
+  }
+
+  .remove-image {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.75rem;
+    top: -0.375rem;
+    right: -0.375rem;
+  }
+
+  .remove-all-images {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.75rem;
+  }
 }

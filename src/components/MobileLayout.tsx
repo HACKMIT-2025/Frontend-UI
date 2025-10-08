@@ -27,8 +27,70 @@ const MobileLayout: React.FC = () => {
   console.log('📱 User agent:', navigator.userAgent)
   console.log('📱 Screen width:', window.innerWidth)
 
+  // Handle multiple map upload for level pack creation
+  const handleMultipleMapUpload = async (files: File[]) => {
+    const levelIds: number[] = []
+    const totalFiles = files.length
+
+    try {
+      setUploadedFileName(`${totalFiles} maps`)
+      setShowUploadModal(false)
+      setShowAILoader(true)
+
+      // Process each file sequentially
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        console.log(`📝 Processing map ${i + 1}/${totalFiles}: ${file.name}...`)
+
+        // Process this map
+        const result = await mapProcessing.processMap(file, (step: string, message: string) => {
+          console.log(`Map ${i + 1}: ${step} - ${message}`)
+        })
+
+        if (result.success && result.level_id) {
+          levelIds.push(Number(result.level_id))
+          console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
+        } else {
+          throw new Error(`Failed to process map ${i + 1}: ${file.name}`)
+        }
+      }
+
+      // All maps processed, create level pack
+      const packName = `Mobile Level Pack - ${new Date().toLocaleDateString()}`
+      const packResult = await gameAPI.createLevelPack({
+        name: packName,
+        description: `Created from ${totalFiles} hand-drawn maps`,
+        level_ids: levelIds,
+        created_by: 'mobile_user',
+        is_public: true  // Mobile packs are public by default
+      })
+
+      console.log('✅ Level pack created:', packResult)
+
+      // Store result for when AI loader completes
+      ;(window as any).mapProcessingResult = {
+        success: true,
+        pack_id: packResult.pack_id,
+        level_ids: levelIds,
+        is_pack: true
+      }
+      ;(window as any).processingComplete = true
+    } catch (error) {
+      console.error('Error processing multiple maps:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create level pack'
+      ;(window as any).mapProcessingResult = { success: false, error: errorMessage }
+      ;(window as any).processingComplete = true
+    }
+  }
+
   const handleMapUpload = async (files: File | File[]) => {
-    // Mobile only supports single file
+    // Handle multiple files
+    if (Array.isArray(files) && files.length > 1) {
+      await handleMultipleMapUpload(files)
+      return
+    }
+
+    // Handle single file
     const file = Array.isArray(files) ? files[0] : files
 
     if (!file) return
@@ -60,10 +122,35 @@ const MobileLayout: React.FC = () => {
 
     console.log('🔍 Mobile HandleAILoaderComplete - result:', result)
     console.log('🔍 Mobile result?.success:', result?.success)
-    console.log('🔍 Mobile result.level_id:', result.level_id)
-    console.log('🔍 Mobile Condition check:', result?.success && result.level_id)
+    console.log('🔍 Mobile result.is_pack:', result?.is_pack)
+    console.log('🔍 Mobile result.level_id:', result?.level_id)
+    console.log('🔍 Mobile result.pack_id:', result?.pack_id)
 
-    if (result?.success && result.level_id) {
+    if (!result?.success) {
+      // Show error and go back to upload
+      console.error('📱 Upload processing failed:', result)
+      alert('Upload processing failed, please try again')
+      setShowUploadModal(true)
+      return
+    }
+
+    // Handle level pack
+    if (result.is_pack && result.pack_id) {
+      try {
+        console.log('📱 Redirecting to level pack game page...')
+        const gameUrl = `https://frontend-mario.vercel.app/pack?id=${result.pack_id}&mobile=true`
+        console.log('📱 Level pack URL:', gameUrl)
+        window.location.href = gameUrl
+      } catch (error) {
+        console.error('📱 Error redirecting to level pack:', error)
+        alert('Failed to load level pack, please try again')
+        setShowUploadModal(true)
+      }
+      return
+    }
+
+    // Handle single level
+    if (result.level_id) {
       try {
         // 手机模式：自动保存到数据库（public）
         console.log('📱 Auto-publishing level to database...')
@@ -87,8 +174,7 @@ const MobileLayout: React.FC = () => {
         window.location.href = gameUrl
       }
     } else {
-      // Show error and go back to upload
-      console.error('📱 Upload processing failed:', result)
+      console.error('📱 No level_id or pack_id in result')
       alert('Upload processing failed, please try again')
       setShowUploadModal(true)
     }
@@ -219,6 +305,7 @@ const MobileLayout: React.FC = () => {
         onClose={() => setShowUploadModal(false)}
         onUpload={handleMapUpload}
         isProcessing={false}
+        allowMultiple={true}
       />
 
       <AICodeGeneratorLoader
