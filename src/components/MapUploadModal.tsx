@@ -74,6 +74,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const handleAddMoreMobile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFiles(Array.from(e.target.files), true) // Always append mode
+      e.target.value = '' // Reset input to allow selecting again (fixes Chrome mobile issue)
     }
   }
 
