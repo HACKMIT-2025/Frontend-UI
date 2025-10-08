@@ -67,7 +67,14 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
 
   const handleAddMore = () => {
     // Trigger file input to add more images
+    // Note: This may not work on all mobile devices
     inputRef.current?.click()
+  }
+
+  const handleAddMoreMobile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(Array.from(e.target.files), true) // Always append mode
+    }
   }
 
   const handleFiles = (files: File[], appendMode = false) => {
@@ -405,10 +412,26 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                   Choose Different
                 </button>
                 {allowMultiple && (
-                  <button className="btn-add-more" onClick={handleAddMore}>
-                    <span className="btn-icon">➕</span>
-                    Add More
-                  </button>
+                  <>
+                    {/* Desktop: button with onClick */}
+                    <button className="btn-add-more desktop-only" onClick={handleAddMore}>
+                      <span className="btn-icon">➕</span>
+                      Add More
+                    </button>
+                    {/* Mobile: label with hidden input */}
+                    <label htmlFor="add-more-input" className="btn-add-more mobile-only">
+                      <span className="btn-icon">➕</span>
+                      Add More
+                      <input
+                        id="add-more-input"
+                        type="file"
+                        accept="image/*"
+                        multiple={allowMultiple}
+                        onChange={handleAddMoreMobile}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </>
                 )}
                 <button className="btn-primary" onClick={handleUpload}>
                   <span className="btn-icon">🚀</span>

@@ -869,4 +869,34 @@
     .remove-preview-image {
         opacity: 1;
     }
+
+    /* Hide drag-drop zone on mobile */
+    .drop-zone {
+        display: none;
+    }
+
+    /* Hide "or" text on mobile */
+    .upload-or {
+        display: none;
+    }
+
+    /* Desktop/Mobile button visibility */
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: flex !important;
+    }
+}
+
+/* Desktop-only elements */
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+
+    .desktop-only {
+        display: flex !important;
+    }
 }
