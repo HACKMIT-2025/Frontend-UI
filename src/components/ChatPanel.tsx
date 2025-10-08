@@ -38,6 +38,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
   const [waitingForPublicName, setWaitingForPublicName] = useState(false)
   const [currentLevelId, setCurrentLevelId] = useState<string | null>(null)
   const [currentPackId, setCurrentPackId] = useState<number | null>(null)
+  const [currentLevelIds, setCurrentLevelIds] = useState<number[]>([])
   const [waitingForPackPublicName, setWaitingForPackPublicName] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -78,8 +79,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
 
       // Handle pack public name submission
       setWaitingForPackPublicName(false)
-      if (currentPackId) {
-        await handlePackPublicSharingResponse(true, content.trim(), currentPackId)
+      if (currentPackId && currentLevelIds.length > 0) {
+        await handlePackPublicSharingResponse(true, content.trim(), currentPackId, currentLevelIds)
       }
       return
     }
@@ -217,8 +218,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
 
       console.log('✅ Level pack created:', packResult)
 
-      // Store pack ID for public sharing
+      // Store pack ID and level IDs for public sharing
       setCurrentPackId(packResult.pack_id)
+      setCurrentLevelIds(levelIds)
 
       // Success message
       const successMessage: Message = {
