@@ -37,6 +37,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
   const [uploadedFileName, setUploadedFileName] = useState('')
   const [waitingForPublicName, setWaitingForPublicName] = useState(false)
   const [currentLevelId, setCurrentLevelId] = useState<string | null>(null)
+  const [currentPackId, setCurrentPackId] = useState<number | null>(null)
+  const [waitingForPackPublicName, setWaitingForPackPublicName] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -61,6 +63,24 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
       // Handle public name submission
       setWaitingForPublicName(false)
       await handlePublicSharingResponse(true, content.trim())
+      return
+    }
+
+    // Handle pack public name input
+    if (waitingForPackPublicName && content.trim()) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMessage])
+
+      // Handle pack public name submission
+      setWaitingForPackPublicName(false)
+      if (currentPackId) {
+        await handlePackPublicSharingResponse(true, content.trim(), currentPackId)
+      }
       return
     }
 
@@ -197,22 +217,48 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
 
       console.log('✅ Level pack created:', packResult)
 
+      // Store pack ID for public sharing
+      setCurrentPackId(packResult.pack_id)
+
       // Success message
       const successMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `🎉 **Level Pack Created Successfully!**\n\nYour ${totalFiles}-level pack has been created!\n\n✨ Play through each level in sequence. Complete one to unlock the next!`,
+        content: `🎉 **Level Pack Created Successfully!**\n\nYour ${totalFiles}-level pack has been created!\n\nPack ID: \`${packResult.pack_id}\`\n\n✨ Play through each level in sequence. Complete one to unlock the next!`,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, successMessage])
 
-      // Notify parent to load the level pack
-      if (onLevelPackGenerated) {
-        onLevelPackGenerated({
-          packId: packResult.pack_id,
-          levelIds: levelIds
-        })
-      }
+      // Ask about public sharing (similar to single level)
+      setTimeout(() => {
+        const publicSharingMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `🌟 **Share with the Community?**\n\nWould you like to share your level pack publicly with the community?\n\nYou can always change this setting later.`,
+          timestamp: new Date(),
+          buttons: [
+            {
+              id: 'share-pack-public',
+              text: '🌍 Share Publicly',
+              action: () => {
+                console.log('🔵 Share Pack Publicly button clicked')
+                console.log('🔵 Current pack ID:', packResult.pack_id)
+                handlePackPublicSharingResponse(true, undefined, packResult.pack_id, levelIds)
+              }
+            },
+            {
+              id: 'keep-pack-private',
+              text: '🔒 Keep Private',
+              action: () => {
+                console.log('🔴 Keep Pack Private button clicked')
+                console.log('🔴 Current pack ID:', packResult.pack_id)
+                handlePackPublicSharingResponse(false, undefined, packResult.pack_id, levelIds)
+              }
+            }
+          ]
+        }
+        setMessages(prev => [...prev, publicSharingMessage])
+      }, 1000)
 
     } catch (error) {
       console.error('Error processing multiple maps:', error)
@@ -437,6 +483,117 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
         setMessages(prev => [...prev, followUpMessage])
       }, 3000)
     }
+  }
+
+  const handlePackPublicSharingResponse = async (wantsToShare: boolean, publicName: string | undefined, packId: number, levelIds: number[]) => {
+    console.log('🎯 handlePackPublicSharingResponse called with:', { wantsToShare, publicName, packId, levelIds })
+
+    // Show confirmation message first
+    const confirmationMessage: Message = {
+      id: Date.now().toString(),
+      type: 'ai',
+      content: wantsToShare
+        ? `🌍 **Great choice!** You want to share your level pack publicly.`
+        : `🔒 **Understood!** You want to keep your level pack private.`,
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, confirmationMessage])
+
+    if (wantsToShare) {
+      // Ask for public name
+      if (!publicName) {
+        setWaitingForPackPublicName(true)
+        const namePromptMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `🌟 **Let's make your level pack public!**\n\nPlease enter a name for your public level pack:\n\n(This name will be visible to other players in the community)`,
+          timestamp: new Date()
+        }
+        setTimeout(() => {
+          setMessages(prev => [...prev, namePromptMessage])
+        }, 500)
+        return
+      }
+
+      // Submit the public sharing request for pack
+      try {
+        const response = await fetch(`https://25hackmit--hackmit25-backend.modal.run/api/game/level-packs/${packId}/set-public`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_public: true,
+            public_name: publicName
+          })
+        })
+
+        if (response.ok) {
+          const successMessage: Message = {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `🎉 **Level Pack Shared Successfully!**\n\nYour level pack "${publicName}" is now public and visible in the community!\n\n🌍 Other players can now discover and play your levels.\n\n✨ You can change this setting anytime from your pack settings.`,
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, successMessage])
+        } else {
+          throw new Error('Failed to make level pack public')
+        }
+      } catch (error) {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `❌ **Failed to share level pack publicly**\n\nThere was an error making your level pack public. You can try again later.`,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } else {
+      // User chose to keep it private
+      const privateMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `🔒 **Level Pack Kept Private**\n\nYour level pack will remain private and only accessible to you.\n\n💡 **Tip:** You can always make it public later from your pack settings!`,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, privateMessage])
+    }
+
+    // Generate and share pack link
+    const correctPackUrl = `https://frontend-mario.vercel.app/play?pack=${packId}`;
+
+    setTimeout(() => {
+      copyToClipboard(correctPackUrl, 'Level Pack Share')
+    }, 1000)
+
+    setTimeout(() => {
+      const shareMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'ai',
+        content: `🔗 **Share Your Level Pack!**\n\nThe level pack link has been automatically copied to your clipboard. You can now:\n• Paste and share with friends\n• Post on social media\n• Save to your bookmarks\n\nClick the button below to copy the link again:\n\n**🎮 [Click to copy share link](${correctPackUrl})**`,
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, shareMessage])
+    }, 2000)
+
+    // Load the level pack into the game
+    setTimeout(() => {
+      if (onLevelPackGenerated) {
+        console.log('🎮 Loading level pack into game:', packId)
+        onLevelPackGenerated({
+          packId: packId,
+          levelIds: levelIds
+        })
+      }
+
+      const followUpMessage: Message = {
+        id: (Date.now() + 3).toString(),
+        type: 'ai',
+        content: '🎮 **Your level pack is now active in the game on the left!**\n\nNow you can:\n• Play through all levels in sequence\n• Complete one to unlock the next\n• Challenge your friends with the share link\n\nEnjoy your custom level pack!',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, followUpMessage])
+    }, 3000)
   }
 
   const handleAILoaderComplete = () => {
