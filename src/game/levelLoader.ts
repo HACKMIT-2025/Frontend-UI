@@ -29,6 +29,9 @@ export interface LevelLoadResult {
     totalLevels: number
     currentIndex: number
   }
+  // Complete level pack data for multi-level progression
+  allLevels?: LevelLoadResult[]
+  pack?: any
 }
 
 export class LevelLoader {
@@ -379,9 +382,14 @@ export class LevelLoader {
 
       if (effectivePackId) {
         console.log(`🎮 Loading level pack ${effectivePackId} from URL parameter`)
-        const { levels } = await this.loadLevelPack(effectivePackId)
+        const { pack, levels } = await this.loadLevelPack(effectivePackId)
         if (levels.length > 0) {
-          return levels[0] // Return first level of the pack
+          // Return first level with complete pack data
+          const firstLevel = levels[0]
+          firstLevel.allLevels = levels
+          firstLevel.pack = pack
+          console.log(`✅ Loaded level pack with ${levels.length} levels`)
+          return firstLevel
         }
       }
 
