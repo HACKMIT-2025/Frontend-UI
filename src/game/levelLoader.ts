@@ -362,8 +362,9 @@ export class LevelLoader {
     apiUrl?: string
     jsonData?: any
     fallbackToDefault?: boolean
+    packId?: number
   }): Promise<LevelLoadResult> {
-    const { jsonUrl, levelId, apiUrl, jsonData, fallbackToDefault = true } = options || {}
+    const { jsonUrl, levelId, apiUrl, jsonData, fallbackToDefault = true, packId } = options || {}
 
     try {
       // 1. 优先使用直接提供的JSON数据
@@ -371,25 +372,38 @@ export class LevelLoader {
         return this.loadFromJsonData(jsonData)
       }
 
-      // 2. 尝试从JSON URL加载
+      // 2. 检查 URL 参数中是否有 pack 参数
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlPackId = urlParams.get('pack')
+      const effectivePackId = packId || (urlPackId ? parseInt(urlPackId) : undefined)
+
+      if (effectivePackId) {
+        console.log(`🎮 Loading level pack ${effectivePackId} from URL parameter`)
+        const { levels } = await this.loadLevelPack(effectivePackId)
+        if (levels.length > 0) {
+          return levels[0] // Return first level of the pack
+        }
+      }
+
+      // 3. 尝试从JSON URL加载
       if (jsonUrl) {
         return await this.loadFromJsonUrl(jsonUrl)
       }
 
-      // 3. 尝试从API level ID加载
+      // 4. 尝试从API level ID加载
       if (levelId) {
         return await this.loadFromLevelId(levelId, apiUrl)
       }
 
-      // 4. 尝试从URL参数加载
+      // 5. 尝试从URL参数加载
       const urlData = this.loadFromURL()
       if (urlData) {
         return urlData
       }
 
-      // 5. 如果启用fallback，返回默认数据
+      // 6. 如果启用fallback，返回默认数据
       if (fallbackToDefault) {
-        console.log('📋 Using default level data')
+        console.log('📋 Using default level data (fallback)')
         return this.getDefaultLevel()
       }
 
