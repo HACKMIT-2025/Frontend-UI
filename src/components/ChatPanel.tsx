@@ -222,11 +222,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
       setCurrentPackId(packResult.pack_id)
       setCurrentLevelIds(levelIds)
 
+      // 🎮 Immediately load the game (default private)
+      console.log('🎮 Loading level pack in game panel...')
+      if (onLevelPackGenerated) {
+        onLevelPackGenerated({
+          packId: packResult.pack_id,
+          levelIds: levelIds
+        })
+      }
+
       // Success message
       const successMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `🎉 **Level Pack Created Successfully!**\n\nYour ${totalFiles}-level pack has been created!\n\nPack ID: \`${packResult.pack_id}\`\n\n✨ Play through each level in sequence. Complete one to unlock the next!`,
+        content: `🎉 **Level Pack Created Successfully!**\n\nYour ${totalFiles}-level pack has been created and loaded in the game!\n\nPack ID: \`${packResult.pack_id}\`\n\n✨ Play through each level in sequence. Complete one to unlock the next!`,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, successMessage])
@@ -561,8 +570,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
       setMessages(prev => [...prev, privateMessage])
     }
 
-    // Generate and share pack link
-    const correctPackUrl = `https://frontend-mario.vercel.app/play?pack=${packId}`;
+    // Generate and share pack link (fix: use packId parameter instead of pack)
+    const correctPackUrl = `https://frontend-mario.vercel.app/play?packId=${packId}`;
 
     setTimeout(() => {
       copyToClipboard(correctPackUrl, 'Level Pack Share')
@@ -578,24 +587,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
       setMessages(prev => [...prev, shareMessage])
     }, 2000)
 
-    // Load the level pack into the game
-    setTimeout(() => {
-      if (onLevelPackGenerated) {
-        console.log('🎮 Loading level pack into game:', packId)
-        onLevelPackGenerated({
-          packId: packId,
-          levelIds: levelIds
-        })
-      }
-
-      const followUpMessage: Message = {
-        id: (Date.now() + 3).toString(),
-        type: 'ai',
-        content: '🎮 **Your level pack is now active in the game on the left!**\n\nNow you can:\n• Play through all levels in sequence\n• Complete one to unlock the next\n• Challenge your friends with the share link\n\nEnjoy your custom level pack!',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, followUpMessage])
-    }, 3000)
+    // Note: Game already loaded when pack was created, no need to reload here
   }
 
   const handleAILoaderComplete = () => {
