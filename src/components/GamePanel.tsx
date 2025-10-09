@@ -76,11 +76,14 @@ const GamePanel = forwardRef<GamePanelRef, GamePanelProps>(({ levelId, jsonUrl, 
   // Function to load level pack (exposed via ref)
   const loadLevelPack = (packId: number) => {
     console.log('🎮 GamePanel loadLevelPack called with pack ID:', packId)
+    console.log('🔍 isMobile:', isMobile)
     const baseUrl = 'https://frontend-mario.vercel.app/embed'
     const url = `${baseUrl}?pack=${packId}${isMobile ? '&mobile=true' : ''}`
     console.log('🔗 Generated pack URL:', url)
+    console.log('🔍 Current iframe URL before change:', iframeUrl)
     setIframeUrl(url)
     setError(null)
+    console.log('🔍 New iframe URL set to:', url)
     onLevelLoaded?.()
     console.log('✅ GamePanel loadLevelPack completed')
   }

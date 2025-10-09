@@ -51,13 +51,28 @@ const Layout: React.FC = () => {
     levelIds: number[]
   }) => {
     console.log('🎮 Layout handleLevelPackGenerated called with:', packData)
+    console.log('🔍 gamePanelRef.current:', gamePanelRef.current)
+    console.log('🔍 loadLevelPack method exists:', gamePanelRef.current?.loadLevelPack)
 
     // Load level pack
     if (gamePanelRef.current && gamePanelRef.current.loadLevelPack) {
       console.log('✅ GamePanel ref is available, loading level pack:', packData.packId)
       gamePanelRef.current.loadLevelPack(packData.packId)
+      console.log('✅ loadLevelPack method called')
     } else {
-      console.log('❌ GamePanel ref is not available or loadLevelPack method missing')
+      console.error('❌ GamePanel ref is not available or loadLevelPack method missing')
+      console.error('❌ gamePanelRef.current:', gamePanelRef.current)
+
+      // Retry after a short delay
+      console.log('⏳ Retrying after 500ms...')
+      setTimeout(() => {
+        if (gamePanelRef.current && gamePanelRef.current.loadLevelPack) {
+          console.log('✅ Retry successful, loading level pack:', packData.packId)
+          gamePanelRef.current.loadLevelPack(packData.packId)
+        } else {
+          console.error('❌ Retry failed - GamePanel still not ready')
+        }
+      }, 500)
     }
   }
 

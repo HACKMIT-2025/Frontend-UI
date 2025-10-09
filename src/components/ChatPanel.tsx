@@ -224,11 +224,18 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
 
       // 🎮 Immediately load the game (default private)
       console.log('🎮 Loading level pack in game panel...')
+      console.log('🔍 onLevelPackGenerated callback exists:', !!onLevelPackGenerated)
+      console.log('🔍 Pack data to load:', { packId: packResult.pack_id, levelIds })
+
       if (onLevelPackGenerated) {
+        console.log('✅ Calling onLevelPackGenerated...')
         onLevelPackGenerated({
           packId: packResult.pack_id,
           levelIds: levelIds
         })
+        console.log('✅ onLevelPackGenerated called successfully')
+      } else {
+        console.error('❌ onLevelPackGenerated callback is not defined!')
       }
 
       // Success message
