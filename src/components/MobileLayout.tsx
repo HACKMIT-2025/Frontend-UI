@@ -37,23 +37,43 @@ const MobileLayout: React.FC = () => {
       setShowUploadModal(false)
       setShowAILoader(true)
 
-      // Process each file sequentially
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        console.log(`📝 Processing map ${i + 1}/${totalFiles}: ${file.name}...`)
+      // Process all files in parallel for faster upload (mobile optimization)
+      console.log(`🚀 Processing ${totalFiles} maps in parallel...`)
 
-        // Process this map
-        const result = await mapProcessing.processMap(file, (step: string, message: string) => {
-          console.log(`Map ${i + 1}: ${step} - ${message}`)
+      const results = await Promise.all(
+        files.map(async (file, i) => {
+          console.log(`🚀 Starting parallel processing for map ${i + 1}: ${file.name}`)
+
+          try {
+            const result = await mapProcessing.processMap(file, (step: string, message: string) => {
+              console.log(`Map ${i + 1}: ${step} - ${message}`)
+            })
+
+            if (result.success && result.level_id) {
+              console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
+              return { success: true, level_id: result.level_id, index: i, filename: file.name }
+            } else {
+              throw new Error(`Processing failed for ${file.name}`)
+            }
+          } catch (error) {
+            console.error(`❌ Map ${i + 1} failed:`, error)
+            return { success: false, index: i, filename: file.name, error }
+          }
         })
+      )
 
+      // Check for any failures
+      const failures = results.filter(r => !r.success)
+      if (failures.length > 0) {
+        throw new Error(`Failed to process ${failures.length} map(s): ${failures.map(f => f.filename).join(', ')}`)
+      }
+
+      // Extract level IDs in order
+      results.forEach(result => {
         if (result.success && result.level_id) {
           levelIds.push(Number(result.level_id))
-          console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
-        } else {
-          throw new Error(`Failed to process map ${i + 1}: ${file.name}`)
         }
-      }
+      })
 
       // All maps processed, create level pack
       const packName = `Mobile Level Pack - ${new Date().toLocaleDateString()}`
