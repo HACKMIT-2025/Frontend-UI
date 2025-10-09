@@ -138,7 +138,7 @@ const MobileLayout: React.FC = () => {
     if (result.is_pack && result.pack_id) {
       try {
         console.log('📱 Redirecting to level pack game page...')
-        const gameUrl = `https://frontend-mario.vercel.app/pack?id=${result.pack_id}&mobile=true`
+        const gameUrl = `https://frontend-mario.vercel.app/embed?pack=${result.pack_id}&mobile=true`
         console.log('📱 Level pack URL:', gameUrl)
         window.location.href = gameUrl
       } catch (error) {
