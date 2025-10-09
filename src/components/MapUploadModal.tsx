@@ -72,6 +72,11 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
       // Check if we already have files and should append
       const appendMode = selectedFiles.length > 0 && allowMultiple
       handleFiles(Array.from(e.target.files), appendMode)
+
+      // Reset input value to allow selecting the same file again
+      if (appendMode) {
+        e.target.value = ''
+      }
     }
   }
 
