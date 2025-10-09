@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
 import { gameAPI } from '../services/api'
@@ -32,6 +32,18 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   // Detect if device is mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
 
+  // Auto-switch mode based on number of images
+  useEffect(() => {
+    if (!allowMultiple) return // Only auto-switch when multiple is allowed
+
+    if (selectedFiles.length === 1) {
+      setShowCropper(true)  // Single image mode with cropper
+    } else if (selectedFiles.length > 1) {
+      setShowCropper(false) // Multi-image mode
+    }
+    // If 0, keep current state (will be in upload screen anyway)
+  }, [selectedFiles.length, allowMultiple])
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -48,7 +60,9 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     setDragActive(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFiles(Array.from(e.dataTransfer.files))
+      // Check if we already have files and should append
+      const appendMode = selectedFiles.length > 0 && allowMultiple
+      handleFiles(Array.from(e.dataTransfer.files), appendMode)
     }
   }
 
@@ -101,7 +115,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
 
       Promise.all(loadPromises).then(newUrls => {
         setPreviewUrls(prev => [...prev, ...newUrls])
-        setShowCropper(false)
+        // showCropper is auto-managed by useEffect based on selectedFiles.length
       })
     } else {
       // Replace mode: clear and set new files
@@ -118,7 +132,7 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
 
       Promise.all(loadPromises).then(urls => {
         setPreviewUrls(urls)
-        setShowCropper(false) // Skip cropper for multiple images, or show for first image
+        // showCropper is auto-managed by useEffect based on selectedFiles.length
       })
     }
   }
