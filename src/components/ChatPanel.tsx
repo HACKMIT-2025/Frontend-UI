@@ -184,33 +184,33 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ onLevelGenerated, onLevelPackGene
       const startMessage: Message = {
         id: Date.now().toString(),
         type: 'ai',
-        content: `🚀 **Processing ${totalFiles} maps in parallel...**\n\nThis will be much faster than processing one by one!`,
+        content: `🚀 **Processing ${totalFiles} maps sequentially...**\n\nThis ensures stable processing for each map!`,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, startMessage])
 
-      // Process all files in parallel for faster upload
-      const results = await Promise.all(
-        files.map(async (file, i) => {
-          console.log(`🚀 Starting parallel processing for map ${i + 1}: ${file.name}`)
+      // Process files one by one (sequential) for stability
+      const results = []
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        console.log(`🚀 Processing map ${i + 1}/${totalFiles}: ${file.name}`)
 
-          try {
-            const result = await mapProcessing.processMap(file, (step: string, message: string) => {
-              console.log(`Map ${i + 1}: ${step} - ${message}`)
-            })
+        try {
+          const result = await mapProcessing.processMap(file, (step: string, message: string) => {
+            console.log(`Map ${i + 1}: ${step} - ${message}`)
+          })
 
-            if (result.success && result.level_id) {
-              console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
-              return { success: true, level_id: result.level_id, index: i, filename: file.name }
-            } else {
-              throw new Error(`Processing failed for ${file.name}`)
-            }
-          } catch (error) {
-            console.error(`❌ Map ${i + 1} failed:`, error)
-            return { success: false, index: i, filename: file.name, error }
+          if (result.success && result.level_id) {
+            console.log(`✅ Map ${i + 1} processed successfully. Level ID: ${result.level_id}`)
+            results.push({ success: true, level_id: result.level_id, index: i, filename: file.name })
+          } else {
+            throw new Error(`Processing failed for ${file.name}`)
           }
-        })
-      )
+        } catch (error) {
+          console.error(`❌ Map ${i + 1} failed:`, error)
+          results.push({ success: false, index: i, filename: file.name, error })
+        }
+      }
 
       // Check for any failures
       const failures = results.filter(r => !r.success)
