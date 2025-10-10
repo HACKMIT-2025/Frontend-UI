@@ -114,22 +114,22 @@ class MapProcessingService {
   }
 
   // 前端上传函数 - 通过后端API
-  async uploadImage(imageFile: File, prompt: string = "Analyze this hand-drawn map and create a Mario game level"): Promise<any> {
+  async uploadImage(imageFile: File): Promise<any> {
     try {
       // 1. 将文件转换为 base64
       const base64String = await this.fileToBase64(imageFile);
 
-      // 2. 发送到我们的后端API，由后端处理OpenCV识别和数据库存储
-      console.log('Uploading to backend:', this.backendUrl);
+      // 2. 发送到我们的后端API，使用本地OpenCV识别和数据库存储
+      console.log('Uploading to backend (OpenCV):', this.backendUrl);
 
-      const response = await fetch(`${this.backendUrl}/api/modal/generate-level`, {
+      const response = await fetch(`${this.backendUrl}/api/opencv/create-level`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           image_base64: base64String,
-          prompt: prompt
+          difficulty: 'medium'
         })
       });
 
@@ -159,7 +159,7 @@ class MapProcessingService {
       if (onProgress) onProgress('detect', 'Using OpenCV to detect shapes (triangles, circles, platforms)...');
 
       // 调用后端API进行OpenCV图像识别
-      const result = await this.uploadImage(imageFile, "Analyze this hand-drawn Mario level map. Detect triangles as start points, circles as end points, and other shapes as platforms.");
+      const result = await this.uploadImage(imageFile);
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
