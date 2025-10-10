@@ -1,7 +1,7 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
-import Cropper from 'react-easy-crop'
-import type { Area } from 'react-easy-crop'
-import { gameAPI } from '../services/api'
+import React, { useState, useRef } from 'react'
+// import Cropper from 'react-easy-crop'
+// import type { Area } from 'react-easy-crop'
+// import { gameAPI } from '../services/api'
 import './MapUploadModal.css'
 
 interface MapUploadModalProps {
@@ -22,27 +22,21 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false)
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [showCropper, setShowCropper] = useState(false)
-  const [crop, setCrop] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Detect if device is mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
 
-  // Auto-switch mode based on number of images
-  useEffect(() => {
-    if (!allowMultiple) return // Only auto-switch when multiple is allowed
-
-    if (selectedFiles.length === 1) {
-      setShowCropper(true)  // Single image mode with cropper
-    } else if (selectedFiles.length > 1) {
-      setShowCropper(false) // Multi-image mode
-    }
-    // If 0, keep current state (will be in upload screen anyway)
-  }, [selectedFiles.length, allowMultiple])
+  // Cropper disabled - always use direct upload
+  // useEffect(() => {
+  //   if (!allowMultiple) return
+  //   if (selectedFiles.length === 1) {
+  //     setShowCropper(true)
+  //   } else if (selectedFiles.length > 1) {
+  //     setShowCropper(false)
+  //   }
+  // }, [selectedFiles.length, allowMultiple])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -67,14 +61,18 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📂 handleChange triggered')
+    console.log('📂 Files selected:', e.target.files?.length)
     e.preventDefault()
     if (e.target.files && e.target.files.length > 0) {
       // Check if we already have files and should append
       const appendMode = selectedFiles.length > 0 && allowMultiple
+      console.log('📂 appendMode:', appendMode, '(selectedFiles.length:', selectedFiles.length, ', allowMultiple:', allowMultiple, ')')
       handleFiles(Array.from(e.target.files), appendMode)
 
       // Reset input value to allow selecting the same file again
       if (appendMode) {
+        console.log('📂 Resetting input value for append mode')
         e.target.value = ''
       }
     }
@@ -85,9 +83,13 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleAddMore = () => {
+    console.log('➕ Add More button clicked')
+    console.log('➕ Current selectedFiles:', selectedFiles.length)
+    console.log('➕ inputRef.current:', inputRef.current)
     // Trigger file input to add more images
     // Note: This may not work on all mobile devices
     inputRef.current?.click()
+    console.log('➕ inputRef.current.click() called')
   }
 
   const handleAddMoreMobile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,12 +100,18 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
   }
 
   const handleFiles = (files: File[], appendMode = false) => {
+    console.log('📥 handleFiles called with', files.length, 'files, appendMode:', appendMode)
     const imageFiles = files.filter(f => f.type.startsWith('image/'))
+    console.log('📥 Image files filtered:', imageFiles.length)
 
-    if (imageFiles.length === 0) return
+    if (imageFiles.length === 0) {
+      console.log('❌ No image files found')
+      return
+    }
 
     // If not allowing multiple, only take the first file
     const filesToProcess = allowMultiple ? imageFiles : [imageFiles[0]]
+    console.log('📥 Files to process:', filesToProcess.length, '(allowMultiple:', allowMultiple, ')')
 
     // Append mode: add to existing files
     if (appendMode && allowMultiple) {
@@ -147,127 +155,46 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
     setPreviewUrls(prev => prev.filter((_, i) => i !== index))
   }
 
-  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
-
-  const createCroppedImage = async (): Promise<File | null> => {
-    if (previewUrls.length === 0 || !croppedAreaPixels) return null
-
-    const image = new Image()
-    image.src = previewUrls[0]
-
-    return new Promise((resolve) => {
-      image.onload = () => {
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-          resolve(null)
-          return
-        }
-
-        // Set canvas size to cropped area
-        canvas.width = croppedAreaPixels.width
-        canvas.height = croppedAreaPixels.height
-
-        // Draw the cropped image
-        ctx.drawImage(
-          image,
-          croppedAreaPixels.x,
-          croppedAreaPixels.y,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height,
-          0,
-          0,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height
-        )
-
-        // Convert canvas to blob then to File
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const croppedFile = new File([blob], selectedFiles[0]?.name || 'cropped-map.jpg', {
-              type: 'image/jpeg',
-            })
-            resolve(croppedFile)
-          } else {
-            resolve(null)
-          }
-        }, 'image/jpeg', 0.95)
-      }
-    })
-  }
+  // Cropper functions removed - direct upload only
+  // const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+  //   setCroppedAreaPixels(croppedAreaPixels)
+  // }, [])
+  //
+  // const createCroppedImage = async (): Promise<File | null> => { ... }
 
   const handleUpload = async () => {
+    console.log('🔘 handleUpload called, selectedFiles.length:', selectedFiles.length)
     try {
       setIsScanning(true)
 
       if (selectedFiles.length === 0) {
+        console.log('❌ No files selected')
         setIsScanning(false)
         return
       }
 
-      // If multiple files, skip cropper and enhancement, just upload directly
+      // Multiple files - upload directly for level pack
       if (allowMultiple && selectedFiles.length > 1) {
-        console.log(`Uploading ${selectedFiles.length} files for level pack creation...`)
+        console.log(`📤 Uploading ${selectedFiles.length} files for level pack creation...`)
+        console.log('📤 Calling onUpload with files:', selectedFiles.map(f => f.name))
         onUpload(selectedFiles)
-        setIsScanning(false)
+        console.log('📤 onUpload called successfully, closing modal...')
+        onClose()
         return
       }
 
-      // Single file mode - use cropper and enhancement
-      let fileToProcess: File | null = null
-
-      if (showCropper && selectedFiles.length === 1) {
-        // Create cropped image
-        fileToProcess = await createCroppedImage()
-      } else if (selectedFiles.length > 0) {
-        fileToProcess = selectedFiles[0]
-      }
-
-      if (!fileToProcess) {
-        setIsScanning(false)
+      // Single file - direct upload without cropping or enhancement
+      if (selectedFiles.length === 1) {
+        console.log('📤 Uploading single file directly:', selectedFiles[0].name)
+        onUpload(selectedFiles[0])
+        console.log('📤 onUpload called successfully, closing modal...')
+        onClose()
         return
       }
 
-      // Convert file to base64
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64String = reader.result as string
-
-        try {
-          // Step 1: Scan and enhance document to black/white
-          console.log('Scanning and enhancing document...')
-          const scanResult = await gameAPI.scanDocument(base64String, false, 'adaptive')
-
-          if (scanResult.success && scanResult.image_base64) {
-            // Convert enhanced base64 back to File
-            const response = await fetch(scanResult.image_base64)
-            const blob = await response.blob()
-            const enhancedFile = new File([blob], fileToProcess!.name.replace(/\.[^/.]+$/, '_enhanced.png'), {
-              type: 'image/png',
-            })
-
-            console.log('Document enhanced successfully')
-
-            // Step 2: Upload the enhanced image for processing
-            onUpload(enhancedFile)
-          } else {
-            // If scanning fails, use original
-            console.warn('Document scanning failed, using original image')
-            onUpload(fileToProcess!)
-          }
-        } catch (error) {
-          console.error('Error during document scanning:', error)
-          // If scanning fails, use original
-          onUpload(fileToProcess!)
-        } finally {
-          setIsScanning(false)
-        }
-      }
-
-      reader.readAsDataURL(fileToProcess)
+      // No files selected
+      console.log('❌ No files to upload')
+      setIsScanning(false)
     } catch (error) {
       console.error('Error in handleUpload:', error)
       setIsScanning(false)
@@ -327,114 +254,87 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
               <h2 className="modal-title">
                 {allowMultiple && selectedFiles.length > 1
                   ? `🎮 Review Your ${selectedFiles.length} Maps`
-                  : showCropper ? '✂️ Crop Your Map' : 'Review Your Map'}
+                  : '🎮 Review Your Map'}
               </h2>
 
-              {showCropper && !allowMultiple && previewUrls.length === 1 ? (
-                <>
-                  <div className="cropper-container">
-                    <Cropper
-                      image={previewUrls[0]}
-                      crop={crop}
-                      zoom={zoom}
-                      aspect={4 / 3}
-                      onCropChange={setCrop}
-                      onZoomChange={setZoom}
-                      onCropComplete={onCropComplete}
-                    />
-                  </div>
-                  <div className="crop-controls">
-                    <label className="control-label">
-                      <span>🔍 Zoom</span>
-                      <input
-                        type="range"
-                        min={1}
-                        max={3}
-                        step={0.1}
-                        value={zoom}
-                        onChange={(e) => setZoom(Number(e.target.value))}
-                        className="zoom-slider"
-                      />
-                    </label>
-                  </div>
-                  <p className="crop-hint">
-                    💡 Drag to position, pinch or use slider to zoom. Select only the paper area to recognize.
-                  </p>
-                </>
+              {/* Cropper disabled - always show preview */}
+              {/* Multi-image preview grid */}
+              {allowMultiple && selectedFiles.length > 1 ? (
+                <div className="multi-images-preview-grid">
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="multi-image-preview-item">
+                      <img src={url} alt={`Map ${index + 1}`} />
+                      <button
+                        type="button"
+                        className="remove-preview-image"
+                        onClick={() => removeImage(index)}
+                        title="Remove this image"
+                      >
+                        ×
+                      </button>
+                      <span className="image-number">{index + 1}</span>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <>
-                  {/* Multi-image preview grid */}
-                  {allowMultiple && selectedFiles.length > 1 ? (
-                    <div className="multi-images-preview-grid">
-                      {previewUrls.map((url, index) => (
-                        <div key={index} className="multi-image-preview-item">
-                          <img src={url} alt={`Map ${index + 1}`} />
-                          <button
-                            type="button"
-                            className="remove-preview-image"
-                            onClick={() => removeImage(index)}
-                            title="Remove this image"
-                          >
-                            ×
-                          </button>
-                          <span className="image-number">{index + 1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    /* Single image preview */
-                    <div className="preview-image-container">
-                      <img src={previewUrls[0]} alt="Map preview" className="preview-image" />
-                      <div className="preview-overlay">
-                        <div className="preview-grid"></div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="preview-info">
-                    {allowMultiple && selectedFiles.length > 1 ? (
-                      <>
-                        <div className="info-item">
-                          <span className="info-icon">📚</span>
-                          <span className="info-text">{selectedFiles.length} images selected</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-icon">🎯</span>
-                          <span className="info-text">Will create {selectedFiles.length}-level pack</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="info-item">
-                          <span className="info-icon">📄</span>
-                          <span className="info-text">{selectedFiles[0]?.name}</span>
-                        </div>
-                        <div className="info-item">
-                          <span className="info-icon">📏</span>
-                          <span className="info-text">
-                            {selectedFiles[0] && `${(selectedFiles[0].size / 1024).toFixed(1)} KB`}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                /* Single image preview */
+                <div className="preview-image-container">
+                  <img src={previewUrls[0]} alt="Map preview" className="preview-image" />
+                  <div className="preview-overlay">
+                    <div className="preview-grid"></div>
                   </div>
-                </>
+                </div>
               )}
+
+              <div className="preview-info">
+                {allowMultiple && selectedFiles.length > 1 ? (
+                  <>
+                    <div className="info-item">
+                      <span className="info-icon">📚</span>
+                      <span className="info-text">{selectedFiles.length} images selected</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-icon">🎯</span>
+                      <span className="info-text">Will create {selectedFiles.length}-level pack</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="info-item">
+                      <span className="info-icon">📄</span>
+                      <span className="info-text">{selectedFiles[0]?.name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-icon">📏</span>
+                      <span className="info-text">
+                        {selectedFiles[0] && `${(selectedFiles[0].size / 1024).toFixed(1)} KB`}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <div className="modal-actions">
                 <button className="btn-secondary" onClick={() => {
+                  console.log('🔄 Choose Different clicked')
                   setPreviewUrls([])
                   setSelectedFiles([])
-                  setShowCropper(false)
-                  setCrop({ x: 0, y: 0 })
-                  setZoom(1)
                 }}>
                   Choose Different
                 </button>
                 {allowMultiple && (
                   <>
                     {/* Desktop: button with onClick */}
-                    <button className="btn-add-more desktop-only" onClick={handleAddMore}>
+                    <button
+                      className="btn-add-more desktop-only"
+                      onClick={(e) => {
+                        console.log('🖱️ Add More button CLICKED (desktop)')
+                        console.log('🖱️ Event:', e)
+                        handleAddMore()
+                      }}
+                      onMouseDown={(e) => console.log('🖱️ Add More MOUSEDOWN', e)}
+                      onMouseUp={(e) => console.log('🖱️ Add More MOUSEUP', e)}
+                    >
                       <span className="btn-icon">➕</span>
                       Add More
                     </button>
@@ -453,7 +353,17 @@ const MapUploadModal: React.FC<MapUploadModalProps> = ({
                     </label>
                   </>
                 )}
-                <button className="btn-primary" onClick={handleUpload}>
+                <button
+                  className="btn-primary"
+                  onClick={(e) => {
+                    console.log('🚀 Process Map button CLICKED')
+                    console.log('🚀 Event:', e)
+                    console.log('🚀 selectedFiles.length:', selectedFiles.length)
+                    handleUpload()
+                  }}
+                  onMouseDown={(e) => console.log('🚀 Process Map MOUSEDOWN', e)}
+                  onMouseUp={(e) => console.log('🚀 Process Map MOUSEUP', e)}
+                >
                   <span className="btn-icon">🚀</span>
                   {allowMultiple && selectedFiles.length > 1
                     ? `Process ${selectedFiles.length} Maps`
